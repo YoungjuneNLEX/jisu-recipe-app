@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import styles from './RecipeDetail.module.css'
 import { splitIngredients } from '../utils/recipe'
+import { extractVideoId } from '../utils/youtube'
+import YouTubeEmbed from './YouTubeEmbed'
 
 function CheckList({ items }) {
   const [checked, setChecked] = useState({})
@@ -22,7 +24,7 @@ function CheckList({ items }) {
   )
 }
 
-export default function RecipeDetail({ recipe, onClose, onDelete, onToggleFavorite, onTagAdd }) {
+export default function RecipeDetail({ recipe, onClose, onDelete, onEdit, onToggleFavorite, onTagAdd }) {
   const [tagInput, setTagInput] = useState('')
   const [editingTag, setEditingTag] = useState(false)
   const [active, setActive] = useState('ingredients')
@@ -30,6 +32,7 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onToggleFavori
 
   const { main: mainIngredients, sauce: parsedSauce } = splitIngredients(recipe.ingredients)
   const sauceIngredients = recipe.sauce?.length > 0 ? recipe.sauce : parsedSauce
+  const videoId = recipe.videoUrl ? extractVideoId(recipe.videoUrl) : null
 
   const sections = [
     {
@@ -95,13 +98,13 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onToggleFavori
         {/* Hero */}
         <div className={styles.hero}>
           <div className={styles.thumbWrap}>
-            <img className={styles.thumb} src={recipe.thumbnail} alt={recipe.title} />
-            <a
-              className={styles.playBtn}
-              href={recipe.videoUrl}
-              target="_blank"
-              rel="noreferrer"
-            >▶ 영상 보기</a>
+            {videoId ? (
+              <YouTubeEmbed videoId={videoId} videoUrl={recipe.videoUrl} title={recipe.title} />
+            ) : recipe.thumbnail ? (
+              <img className={styles.thumb} src={recipe.thumbnail} alt={recipe.title} />
+            ) : (
+              <div className={styles.thumbPlaceholder}>🍳</div>
+            )}
           </div>
           <h1 className={styles.title}>{recipe.title}</h1>
           <div className={styles.metaRow}>
@@ -194,6 +197,22 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onToggleFavori
             </div>
           </section>
         )}
+
+        {/* Bottom actions */}
+        <div className={styles.bottomActions}>
+          {recipe.videoUrl && (
+            <a
+              className={styles.youtubeBtn}
+              href={recipe.videoUrl}
+              target="_blank"
+              rel="noreferrer"
+            >▶ 유튜브로 이동</a>
+          )}
+          <div className={styles.actionRow}>
+            <button className={styles.editBtn} onClick={() => onEdit(recipe.id)}>✏️ 수정하기</button>
+            <button className={styles.removeBtn} onClick={() => onDelete(recipe.id)}>🗑 삭제하기</button>
+          </div>
+        </div>
 
         <div className={styles.bottomSpace} />
       </div>

@@ -4,7 +4,7 @@ import { parseFromDescription } from '../utils/parseRecipe'
 import { saveRecipe } from '../utils/storage'
 import styles from './AddRecipe.module.css'
 
-export default function AddRecipe({ onAdd, apiKey }) {
+export default function AddRecipe({ onAdd, apiKey, onCreateManual }) {
   const [url, setUrl] = useState('')
   const [status, setStatus] = useState(null)
   const [message, setMessage] = useState('')
@@ -76,6 +76,7 @@ export default function AddRecipe({ onAdd, apiKey }) {
   }
 
   return (
+   <div className={styles.container}>
     <div className={styles.wrapper}>
       <form onSubmit={handleSubmit} className={styles.form}>
         <input
@@ -98,6 +99,11 @@ export default function AddRecipe({ onAdd, apiKey }) {
         <p className={`${styles.message} ${styles[status]}`}>{message}</p>
       )}
     </div>
+
+    <button type="button" className={styles.manualBtn} onClick={onCreateManual}>
+      ✏️ 개인 레시피 추가하기
+    </button>
+   </div>
   )
 }
 

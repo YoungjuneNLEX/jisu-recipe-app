@@ -1,0 +1,70 @@
+.host {
+  width: 100%;
+  height: 100%;
+}
+
+.host :global(iframe),
+.host > div {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* ── Confirm dialog ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px 20px 16px;
+  width: 100%;
+  max-width: 320px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.modalText {
+  font-size: 15px;
+  line-height: 1.6;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+}
+
+.cancelBtn,
+.confirmBtn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.cancelBtn:hover { border-color: var(--accent); color: var(--text-primary); }
+
+.confirmBtn {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.confirmBtn:hover { opacity: 0.85; }

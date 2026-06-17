@@ -1,8 +1,31 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .wrapper {
   background: var(--surface);
   border-radius: var(--radius);
   border: 1.5px solid var(--border);
   overflow: hidden;
+}
+
+.manualBtn {
+  width: 100%;
+  padding: 13px 16px;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+
+.manualBtn:hover {
+  border-color: var(--accent);
+  border-style: solid;
 }
 
 .form {

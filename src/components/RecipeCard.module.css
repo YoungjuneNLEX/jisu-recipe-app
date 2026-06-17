@@ -40,21 +40,15 @@
   display: block;
 }
 
-.playBtn {
-  position: absolute;
-  inset: 0;
+.thumbPlaceholder {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.45);
-  color: #fff;
-  font-size: 14px;
-  opacity: 0;
-  transition: opacity 0.18s;
-  text-decoration: none;
+  font-size: 26px;
+  background: var(--surface-2);
 }
-
-.thumbnailWrap:hover .playBtn { opacity: 1; }
 
 .info {
   flex: 1;

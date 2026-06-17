@@ -2,35 +2,49 @@ import { useState, useEffect, useMemo } from 'react'
 import AddRecipe from './components/AddRecipe'
 import RecipeCard from './components/RecipeCard'
 import RecipeDetail from './components/RecipeDetail'
+import RecipeForm from './components/RecipeForm'
 import { getRecipes, deleteRecipe, toggleFavorite, saveRecipe } from './utils/storage'
 import styles from './App.module.css'
 
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || ''
 
-// Parse the recipe id from a hash like "#/recipe/<id>"
-function parseRouteId(hash) {
-  const m = (hash || '').match(/^#\/recipe\/(.+)$/)
-  return m ? decodeURIComponent(m[1]) : null
+// Parse the current hash into a route: list / new / detail / edit
+function parseRoute(hash) {
+  const h = hash || ''
+  if (h === '#/new') return { view: 'new' }
+  const edit = h.match(/^#\/recipe\/(.+)\/edit$/)
+  if (edit) return { view: 'edit', id: decodeURIComponent(edit[1]) }
+  const detail = h.match(/^#\/recipe\/(.+)$/)
+  if (detail) return { view: 'detail', id: decodeURIComponent(detail[1]) }
+  return { view: 'list' }
 }
 
 export default function App() {
   const [recipes, setRecipes] = useState([])
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
-  const [routeId, setRouteId] = useState(() => parseRouteId(window.location.hash))
+  const [route, setRoute] = useState(() => parseRoute(window.location.hash))
 
   useEffect(() => {
     setRecipes(getRecipes())
   }, [])
 
   useEffect(() => {
-    const onHashChange = () => setRouteId(parseRouteId(window.location.hash))
+    const onHashChange = () => setRoute(parseRoute(window.location.hash))
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
   function openRecipe(id) {
     window.location.hash = `#/recipe/${encodeURIComponent(id)}`
+  }
+
+  function openNewRecipe() {
+    window.location.hash = '#/new'
+  }
+
+  function openEditRecipe(id) {
+    window.location.hash = `#/recipe/${encodeURIComponent(id)}/edit`
   }
 
   function closeRecipe() {
@@ -56,7 +70,7 @@ export default function App() {
   function handleDelete(id) {
     if (!confirm('이 레시피를 삭제할까요?')) return
     setRecipes(deleteRecipe(id))
-    if (routeId === id) closeRecipe()
+    if (route.id === id) window.location.hash = ''
   }
 
   function handleToggleFavorite(id) {
@@ -69,8 +83,26 @@ export default function App() {
     setRecipes(saveRecipe({ ...recipe, tags: [...(recipe.tags || []), tag] }))
   }
 
+  // Save a manually created/edited recipe, then jump to its detail page
+  function handleSaveForm(recipe) {
+    setRecipes(saveRecipe(recipe))
+    window.location.hash = `#/recipe/${encodeURIComponent(recipe.id)}`
+  }
+
   const favoriteCount = recipes.filter(r => r.favorite).length
-  const activeRecipe = routeId ? recipes.find(r => r.id === routeId) : null
+
+  if (route.view === 'new') {
+    return <RecipeForm onSave={handleSaveForm} onClose={closeRecipe} />
+  }
+
+  if (route.view === 'edit') {
+    const editing = recipes.find(r => r.id === route.id)
+    if (editing) {
+      return <RecipeForm recipe={editing} onSave={handleSaveForm} onClose={closeRecipe} />
+    }
+  }
+
+  const activeRecipe = route.view === 'detail' ? recipes.find(r => r.id === route.id) : null
 
   if (activeRecipe) {
     return (
@@ -78,6 +110,7 @@ export default function App() {
         recipe={activeRecipe}
         onClose={closeRecipe}
         onDelete={handleDelete}
+        onEdit={openEditRecipe}
         onToggleFavorite={handleToggleFavorite}
         onTagAdd={handleTagAdd}
       />
@@ -96,7 +129,7 @@ export default function App() {
       </header>
 
       <main className={styles.main}>
-        <AddRecipe onAdd={setRecipes} apiKey={API_KEY} />
+        <AddRecipe onAdd={setRecipes} apiKey={API_KEY} onCreateManual={openNewRecipe} />
 
         <div className={styles.toolbar}>
           <input
