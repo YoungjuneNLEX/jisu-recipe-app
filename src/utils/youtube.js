@@ -11,12 +11,25 @@ export function extractVideoId(url) {
 }
 
 export async function fetchVideoInfo(videoId) {
-  // Route through our proxy to avoid CORS issues on deployed environments
-  const res = await fetch(
-    `/api/youtube/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
-  )
-  if (!res.ok) throw new Error('영상을 불러올 수 없어요')
-  return res.json()
+  // Try oEmbed first
+  try {
+    const res = await fetch(
+      `/api/youtube/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+    )
+    if (res.ok) return res.json()
+  } catch { /* fall through */ }
+
+  // Fallback: parse title/author/thumbnail from YouTube page HTML
+  const html = await fetchYouTubePage(videoId)
+  const titleMatch = html.match(/"title":"((?:[^"\\]|\\.)*)"/)
+  const authorMatch = html.match(/"ownerChannelName":"((?:[^"\\]|\\.)*)"/) ||
+    html.match(/"author":"((?:[^"\\]|\\.)*)"/)
+  if (!titleMatch) throw new Error('영상 정보를 찾을 수 없어요')
+  return {
+    title: titleMatch[1].replace(/\\u0026/g, '&').replace(/\\"/g, '"'),
+    author_name: authorMatch ? authorMatch[1] : '',
+    thumbnail_url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+  }
 }
 
 // Fetch YouTube page HTML via Vite proxy (avoids CORS)
