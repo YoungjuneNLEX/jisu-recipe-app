@@ -4,6 +4,8 @@
   border: 1.5px solid var(--border);
   overflow: hidden;
   transition: box-shadow 0.2s;
+  width: 100%;
+  min-width: 0;
 }
 
 .card.expanded {
@@ -17,6 +19,8 @@
   padding: 14px;
   cursor: pointer;
   user-select: none;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .thumbnailWrap {
@@ -64,6 +68,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
 }
 
 .author {
@@ -71,9 +76,14 @@
   color: var(--text-muted);
   font-weight: 500;
   letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
-.actions { display: flex; gap: 2px; }
+.actions { display: flex; gap: 2px; flex-shrink: 0; }
 
 .favBtn {
   background: none;
