@@ -11,8 +11,9 @@ export function extractVideoId(url) {
 }
 
 export async function fetchVideoInfo(videoId) {
+  // Route through our proxy to avoid CORS issues on deployed environments
   const res = await fetch(
-    `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+    `/api/youtube/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
   )
   if (!res.ok) throw new Error('영상을 불러올 수 없어요')
   return res.json()
