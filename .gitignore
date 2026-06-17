@@ -1,0 +1,11 @@
+# Build output
+dist/
+
+# Dependencies (installed via npm install)
+node_modules/
+
+# Logs / env
+*.log
+.env
+.env.local
+.DS_Store
