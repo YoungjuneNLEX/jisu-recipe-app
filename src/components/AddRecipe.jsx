@@ -118,21 +118,38 @@ async function fetchThumbnailBase64(url) {
 }
 
 async function extractWithClaude(videoId, title, apiKey, setMessage) {
-  const { fetchTranscript, fetchDescription, fetchStoryboardFrames } = await import('../utils/youtube.js')
+  const { fetchTranscript, fetchDescription, fetchStoryboardFrames, fetchVideoDuration } =
+    await import('../utils/youtube.js')
 
-  // Gather all sources in parallel: ASR transcript + description + storyboard frames every 30s
+  // Short-form videos (≤3분) are dense with quick cuts, so sample a frame every
+  // 5s instead of 30s and allow more frames to cover the whole clip.
   setMessage('영상 데이터를 수집하는 중...')
+  const duration = await fetchVideoDuration(videoId)
+  const isShort = duration > 0 && duration <= 180
+  const interval = isShort ? 5 : 30
+  const maxFrames = isShort ? 24 : 12
+
+  // Gather all sources in parallel: ASR transcript + description + storyboard frames
   const [transcript, description, frames] = await Promise.all([
     fetchTranscript(videoId),
     fetchDescription(videoId),
-    fetchStoryboardFrames(videoId, 30),
+    fetchStoryboardFrames(videoId, interval, maxFrames),
   ])
 
-  const hasTranscript = transcript && transcript.length > 200
-  const hasDescription = description && description.length > 50
-  const hasFrames = frames.length > 0
+  // Short videos often lack storyboards entirely — fall back to the thumbnail
+  // so Claude still has a visual reference instead of producing empty content.
+  let frameImages = frames
+  if (!frameImages.length) {
+    const thumb = await fetchThumbnailBase64(`/api/ytimg/vi/${videoId}/hqdefault.jpg`)
+    if (thumb) frameImages = [thumb]
+  }
 
-  console.log(`[Claude] transcript:${transcript.length} description:${description.length} frames:${frames.length}`)
+  // Shorts have terse transcripts/descriptions, so relax the minimum lengths.
+  const hasTranscript = transcript && transcript.length > (isShort ? 50 : 200)
+  const hasDescription = description && description.length > (isShort ? 20 : 50)
+  const hasFrames = frameImages.length > 0
+
+  console.log(`[Claude] duration:${duration}s short:${isShort} interval:${interval}s transcript:${transcript.length} description:${description.length} frames:${frameImages.length}`)
 
   if (!hasTranscript && !hasDescription && !hasFrames) {
     throw new Error('분석할 데이터를 찾을 수 없어요')
@@ -142,7 +159,7 @@ async function extractWithClaude(videoId, title, apiKey, setMessage) {
   const sources = [
     hasTranscript && `자막(${transcript.length}자)`,
     hasDescription && `설명란(${description.length}자)`,
-    hasFrames && `영상프레임(${frames.length}장)`,
+    hasFrames && `영상프레임(${frameImages.length}장)`,
   ].filter(Boolean).join(' + ')
 
   setMessage(`Claude가 분석하는 중... (${sources})`)
@@ -154,7 +171,7 @@ async function extractWithClaude(videoId, title, apiKey, setMessage) {
     hasDescription && `[영상 설명란]\n${description.slice(0, 2000)}`,
   ].filter(Boolean).join('\n\n')
 
-  const imageBlocks = frames.map(b64 => ({
+  const imageBlocks = frameImages.map(b64 => ({
     type: 'image',
     source: { type: 'base64', media_type: 'image/jpeg', data: b64 },
   }))

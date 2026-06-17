@@ -79,27 +79,68 @@ function extractTitle(html) {
   return null
 }
 
-// Fetch YouTube page HTML via Vite proxy (avoids CORS)
+// Cache the watch-page HTML per video. A single "save" pulls the page for
+// info, transcript, description, duration and storyboard — without this we'd
+// fire 4-5 identical requests at YouTube, which gets rate-limited and surfaces
+// to the user as "영상을 불러올 수 없어요".
+let _pageCache = { id: null, html: null }
+
+// Fetch YouTube page HTML via proxy (avoids CORS), with caching + one retry
 async function fetchYouTubePage(videoId) {
-  const res = await fetch(`/api/youtube/watch?v=${videoId}`)
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.text()
+  if (_pageCache.id === videoId && _pageCache.html) return _pageCache.html
+
+  let lastErr
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(`/api/youtube/watch?v=${videoId}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const html = await res.text()
+      _pageCache = { id: videoId, html }
+      return html
+    } catch (e) {
+      lastErr = e
+    }
+  }
+  throw lastErr || new Error('페이지를 불러올 수 없어요')
 }
 
-// Parse storyboard spec and return evenly-spaced frame images every ~intervalSeconds
-export async function fetchStoryboardFrames(videoId, intervalSeconds = 30) {
+// Extract and parse the ytInitialPlayerResponse JSON blob from page HTML.
+// YouTube inlines it on one long line; we balance braces from the opening {.
+function extractPlayerResponse(html) {
+  const idx = html.indexOf('ytInitialPlayerResponse')
+  if (idx === -1) return null
+  const start = html.indexOf('{', idx)
+  let depth = 0, end = start
+  for (; end < html.length; end++) {
+    if (html[end] === '{') depth++
+    else if (html[end] === '}') { depth--; if (depth === 0) break }
+  }
+  try {
+    return JSON.parse(html.slice(start, end + 1))
+  } catch {
+    return null
+  }
+}
+
+// Video length in seconds (0 if unknown). Used to pick frame sampling density.
+export async function fetchVideoDuration(videoId) {
+  try {
+    const player = extractPlayerResponse(await fetchYouTubePage(videoId))
+    const secs = Number(player?.videoDetails?.lengthSeconds)
+    return Number.isFinite(secs) ? secs : 0
+  } catch {
+    return 0
+  }
+}
+
+// Parse storyboard spec and return evenly-spaced frame images every ~intervalSeconds.
+// maxFrames caps how many storyboard images we send (short-form videos sample
+// more densely, so they need a higher cap to cover the whole clip).
+export async function fetchStoryboardFrames(videoId, intervalSeconds = 30, maxFrames = 12) {
   try {
     const html = await fetchYouTubePage(videoId)
 
-    const idx = html.indexOf('ytInitialPlayerResponse')
-    if (idx === -1) return []
-    const start = html.indexOf('{', idx)
-    let depth = 0, end = start
-    for (; end < html.length; end++) {
-      if (html[end] === '{') depth++
-      else if (html[end] === '}') { depth--; if (depth === 0) break }
-    }
-    const playerData = JSON.parse(html.slice(start, end + 1))
+    const playerData = extractPlayerResponse(html)
     const spec = playerData?.storyboards?.playerStoryboardSpecRenderer?.spec
     if (!spec) { console.warn('[storyboard] no spec'); return [] }
 
@@ -115,19 +156,25 @@ export async function fetchStoryboardFrames(videoId, intervalSeconds = 30) {
 
     if (!levels.length) return []
 
-    // Highest quality level with frame width ≤ 200px
-    const level = [...levels].reverse().find(l => l.w <= 200) || levels[levels.length - 1]
+    // Pick a level no wider than 200px (keeps payload small enough for Claude).
+    // Coarse sampling → highest-quality such level. Fine sampling (short-form)
+    // → the level packing the most frames so we can honor the small interval.
+    const pool = levels.filter(l => l.w <= 200)
+    const usable = pool.length ? pool : levels
+    const level = intervalSeconds <= 10
+      ? usable.reduce((a, b) => (b.frameCount > a.frameCount ? b : a))
+      : [...usable].reverse()[0]
     const totalImages = Math.ceil(level.frameCount / level.framesPerImg)
     const secondsPerImg = (level.framesPerImg * level.intervalMs) / 1000
     const step = Math.max(1, Math.round(intervalSeconds / secondsPerImg))
 
     const urlTemplate = rawBase.replace(/\$L/g, level.level).replace('https://i.ytimg.com', '/api/ytimg')
-    console.log(`[storyboard] L${level.level} totalImgs=${totalImages} secsPerImg=${secondsPerImg.toFixed(1)}s step=${step}`)
+    console.log(`[storyboard] L${level.level} totalImgs=${totalImages} secsPerImg=${secondsPerImg.toFixed(1)}s step=${step} cap=${maxFrames}`)
 
     const indices = []
     for (let i = 0; i < totalImages; i += step) indices.push(i)
     if (indices[indices.length - 1] !== totalImages - 1) indices.push(totalImages - 1)
-    const capped = indices.slice(0, 12)
+    const capped = indices.slice(0, maxFrames)
 
     const frames = await Promise.all(capped.map(async n => {
       // Try spec URL first, then simple fallback URL
@@ -207,21 +254,9 @@ export async function fetchTranscript(videoId) {
 
   // Fallback: parse ytInitialPlayerResponse from page to get baseUrl
   try {
-    const html = await fetchYouTubePage(videoId)
+    const playerData = extractPlayerResponse(await fetchYouTubePage(videoId))
+    if (!playerData) { console.warn('[fetchTranscript] no playerResponse in page'); return '' }
 
-    // YouTube puts ytInitialPlayerResponse on one long line
-    const idx = html.indexOf('ytInitialPlayerResponse')
-    if (idx === -1) { console.warn('[fetchTranscript] no playerResponse in page'); return '' }
-
-    // Extract the JSON by counting braces from the opening {
-    const start = html.indexOf('{', idx)
-    let depth = 0, end = start
-    for (; end < html.length; end++) {
-      if (html[end] === '{') depth++
-      else if (html[end] === '}') { depth--; if (depth === 0) break }
-    }
-
-    const playerData = JSON.parse(html.slice(start, end + 1))
     const captionTracks = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? []
     if (!captionTracks.length) { console.warn('[fetchTranscript] no caption tracks'); return '' }
 
