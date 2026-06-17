@@ -75,13 +75,13 @@ export default function App() {
 
   // ── Full-screen overlay views ──
   if (route.view === 'new') {
-    return <RecipeForm onSave={handleSaveForm} onClose={closeOverlay} />
+    return <RecipeForm onSave={handleSaveForm} onClose={closeOverlay} apiKey={API_KEY} />
   }
 
   if (route.view === 'edit') {
     const editing = recipes.find(r => r.id === route.id)
     if (editing) {
-      return <RecipeForm recipe={editing} onSave={handleSaveForm} onClose={closeOverlay} />
+      return <RecipeForm recipe={editing} onSave={handleSaveForm} onClose={closeOverlay} apiKey={API_KEY} />
     }
   }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { fileToThumbnail } from '../utils/media'
+import { generateRecipeImage } from '../utils/aiImage'
 import styles from './RecipeForm.module.css'
 
 // Editor for a single text list (ingredients / steps), with add & remove rows
@@ -37,7 +38,7 @@ function ListEditor({ items, setItems, placeholder, multiline }) {
   )
 }
 
-export default function RecipeForm({ recipe, onSave, onClose }) {
+export default function RecipeForm({ recipe, onSave, onClose, apiKey }) {
   const isEdit = !!recipe
   const [title, setTitle] = useState(recipe?.title || '')
   const [thumbnail, setThumbnail] = useState(recipe?.thumbnail || '')
@@ -47,6 +48,7 @@ export default function RecipeForm({ recipe, onSave, onClose }) {
   const [steps, setSteps] = useState(recipe?.steps?.length ? recipe.steps : [''])
   const [note, setNote] = useState(recipe?.note || '')
   const [mediaStatus, setMediaStatus] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
   const [error, setError] = useState('')
 
   async function handleFile(e) {
@@ -62,6 +64,32 @@ export default function RecipeForm({ recipe, onSave, onClose }) {
     } catch (err) {
       setMediaStatus('')
       setError(err.message || '미디어를 불러올 수 없어요')
+    }
+  }
+
+  async function handleGenerateImage() {
+    const cleanIngredients = ingredients.map(s => s.trim()).filter(Boolean)
+    if (!title.trim() && cleanIngredients.length === 0) {
+      setError('레시피 이름이나 재료를 먼저 입력해 주세요')
+      return
+    }
+    setError('')
+    setAiLoading(true)
+    setMediaStatus('AI가 어울리는 그림을 그리는 중... 🎨')
+    try {
+      const dataUrl = await generateRecipeImage({
+        title: title.trim(),
+        ingredients: cleanIngredients,
+        steps: steps.map(s => s.trim()).filter(Boolean),
+        apiKey,
+      })
+      setThumbnail(dataUrl)
+      setMediaStatus('')
+    } catch (err) {
+      setMediaStatus('')
+      setError(err.message || 'AI 이미지를 만들지 못했어요')
+    } finally {
+      setAiLoading(false)
     }
   }
 
@@ -126,6 +154,16 @@ export default function RecipeForm({ recipe, onSave, onClose }) {
               onChange={handleFile}
             />
           </label>
+          <button
+            type="button"
+            className={styles.aiBtn}
+            onClick={handleGenerateImage}
+            disabled={aiLoading}
+          >
+            {aiLoading ? '🎨 AI가 그림 그리는 중...' : '✨ AI 추천 이미지 만들기'}
+          </button>
+          <p className={styles.aiHint}>레시피 내용을 보고 귀여운 파스텔 그림을 그려줘요</p>
+
           {thumbnail && (
             <div className={styles.mediaActions}>
               <label className={styles.changeBtn}>
