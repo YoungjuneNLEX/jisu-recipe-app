@@ -12,6 +12,9 @@ export default async function handler(req) {
     headers: {
       'User-Agent': UA,
       'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+      // Skip YouTube's EU "Before you continue" consent interstitial, which it
+      // otherwise serves to datacenter IPs and which breaks title/transcript parsing.
+      'Cookie': 'CONSENT=YES+1; SOCS=CAI',
     },
   })
 
