@@ -22,7 +22,7 @@ function CheckList({ items }) {
   )
 }
 
-export default function RecipeDetail({ recipe, onClose, onDelete, onToggleFavorite, onTagAdd }) {
+export default function RecipeDetail({ recipe, onClose, onDelete, onEdit, onToggleFavorite, onTagAdd }) {
   const [tagInput, setTagInput] = useState('')
   const [editingTag, setEditingTag] = useState(false)
   const [active, setActive] = useState('ingredients')
@@ -95,13 +95,19 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onToggleFavori
         {/* Hero */}
         <div className={styles.hero}>
           <div className={styles.thumbWrap}>
-            <img className={styles.thumb} src={recipe.thumbnail} alt={recipe.title} />
-            <a
-              className={styles.playBtn}
-              href={recipe.videoUrl}
-              target="_blank"
-              rel="noreferrer"
-            >▶ 영상 보기</a>
+            {recipe.thumbnail ? (
+              <img className={styles.thumb} src={recipe.thumbnail} alt={recipe.title} />
+            ) : (
+              <div className={styles.thumbPlaceholder}>🍳</div>
+            )}
+            {recipe.videoUrl && (
+              <a
+                className={styles.playBtn}
+                href={recipe.videoUrl}
+                target="_blank"
+                rel="noreferrer"
+              >▶ 영상 보기</a>
+            )}
           </div>
           <h1 className={styles.title}>{recipe.title}</h1>
           <div className={styles.metaRow}>
@@ -194,6 +200,12 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onToggleFavori
             </div>
           </section>
         )}
+
+        {/* Bottom actions */}
+        <div className={styles.bottomActions}>
+          <button className={styles.editBtn} onClick={() => onEdit(recipe.id)}>✏️ 수정하기</button>
+          <button className={styles.removeBtn} onClick={() => onDelete(recipe.id)}>🗑 삭제하기</button>
+        </div>
 
         <div className={styles.bottomSpace} />
       </div>

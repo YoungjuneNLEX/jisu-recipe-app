@@ -8,14 +8,20 @@ export default function RecipeCard({ recipe, onOpen, onDelete, onToggleFavorite 
     <div className={styles.card}>
       <div className={styles.header} onClick={() => onOpen(recipe.id)}>
         <div className={styles.thumbnailWrap}>
-          <img className={styles.thumbnail} src={recipe.thumbnail} alt={recipe.title} />
-          <a
-            className={styles.playBtn}
-            href={recipe.videoUrl}
-            target="_blank"
-            rel="noreferrer"
-            onClick={e => e.stopPropagation()}
-          >▶</a>
+          {recipe.thumbnail ? (
+            <img className={styles.thumbnail} src={recipe.thumbnail} alt={recipe.title} />
+          ) : (
+            <div className={styles.thumbPlaceholder}>🍳</div>
+          )}
+          {recipe.videoUrl && (
+            <a
+              className={styles.playBtn}
+              href={recipe.videoUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={e => e.stopPropagation()}
+            >▶</a>
+          )}
         </div>
 
         <div className={styles.info}>
