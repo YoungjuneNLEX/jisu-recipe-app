@@ -124,76 +124,72 @@
   max-width: 600px;
   width: 100%;
   margin: 0 auto;
-  padding: 16px 16px calc(var(--safe-bottom) + 24px);
+  padding: 16px 16px calc(var(--safe-bottom) + 92px);
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/* ── Toolbar ── */
-.toolbar {
+/* ── Add modal (bottom sheet) ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
-  gap: 10px;
-  align-items: center;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.18s ease;
 }
 
-.search {
-  flex: 1;
-  padding: 11px 14px;
+.modalSheet {
+  width: 100%;
+  max-width: 600px;
   background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 10px 18px calc(var(--safe-bottom) + 20px);
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.22s ease;
+}
+
+.sheetHandle {
+  width: 40px;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--border-strong);
+  margin: 0 auto 14px;
+}
+
+.sheetTitle {
+  font-size: 17px;
+  font-weight: 800;
   color: var(--text-primary);
-  outline: none;
-  transition: border-color 0.15s;
 }
 
-.search:focus { border-color: var(--accent); }
-.search::placeholder { color: var(--text-muted); }
-
-.filters {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.filterBtn {
-  padding: 9px 13px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
+.sheetDesc {
   font-size: 12px;
-  font-weight: 600;
   color: var(--text-muted);
-  white-space: nowrap;
-  transition: all 0.15s;
+  margin: 4px 0 14px;
 }
 
-.filterBtn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
-/* ── Empty ── */
-.empty {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 60px 24px;
+.sheetClose {
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
   font-size: 14px;
-  line-height: 1.7;
+  font-weight: 700;
+  color: var(--text-secondary);
 }
 
-.emptyIcon {
-  font-size: 40px;
-  margin-bottom: 12px;
-  display: block;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* ── List ── */
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }

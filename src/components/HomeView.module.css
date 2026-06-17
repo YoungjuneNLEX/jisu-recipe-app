@@ -1,0 +1,76 @@
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.sectionSub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 28px 16px;
+  background: var(--surface);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.moreBtn {
+  margin-top: 2px;
+  padding: 11px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.moreBtn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.firstEmpty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 60px 24px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.firstEmptyIcon {
+  font-size: 44px;
+  margin-bottom: 14px;
+  display: block;
+}
