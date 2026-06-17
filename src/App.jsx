@@ -4,34 +4,16 @@ import RecipeCard from './components/RecipeCard'
 import { getRecipes, deleteRecipe, toggleFavorite, saveRecipe } from './utils/storage'
 import styles from './App.module.css'
 
-const API_KEY_STORAGE = 'jisu_anthropic_key'
+const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || ''
 
 export default function App() {
   const [recipes, setRecipes] = useState([])
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
-  const [apiKey, setApiKey] = useState('')
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false)
-  const [apiKeyDraft, setApiKeyDraft] = useState('')
 
   useEffect(() => {
     setRecipes(getRecipes())
-    const stored = localStorage.getItem(API_KEY_STORAGE) || ''
-    setApiKey(stored)
-    setApiKeyDraft(stored)
   }, [])
-
-  function handleSaveApiKey() {
-    const trimmed = apiKeyDraft.trim()
-    localStorage.setItem(API_KEY_STORAGE, trimmed)
-    setApiKey(trimmed)
-    setShowApiKeyInput(false)
-  }
-
-  function handleOpenApiKeyPanel() {
-    setApiKeyDraft(apiKey)
-    setShowApiKeyInput(v => !v)
-  }
 
   const filtered = useMemo(() => {
     let list = recipes
@@ -73,36 +55,11 @@ export default function App() {
             <h1 className={styles.logo}>📖 레시피</h1>
             <p className={styles.subtitle}>유튜브 링크로 레시피 저장</p>
           </div>
-          <button
-            className={`${styles.apiKeyBtn} ${apiKey ? styles.apiKeyConnected : ''}`}
-            onClick={handleOpenApiKeyPanel}
-          >
-            {apiKey ? '✓ AI' : '🔑 AI 설정'}
-          </button>
         </div>
-
-        {showApiKeyInput && (
-          <div className={styles.apiKeyPanel}>
-            <p className={styles.apiKeyInfo}>
-              Claude API Key를 입력하면 AI가 레시피를 더 정확하게 추출해요.
-            </p>
-            <div className={styles.apiKeyRow}>
-              <input
-                className={styles.apiKeyInput}
-                type="password"
-                placeholder="sk-ant-..."
-                value={apiKeyDraft}
-                onChange={e => setApiKeyDraft(e.target.value)}
-              />
-              <button className={styles.saveBtn} onClick={handleSaveApiKey}>저장</button>
-              <button className={styles.cancelBtn} onClick={() => setShowApiKeyInput(false)}>취소</button>
-            </div>
-          </div>
-        )}
       </header>
 
       <main className={styles.main}>
-        <AddRecipe onAdd={setRecipes} apiKey={apiKey} />
+        <AddRecipe onAdd={setRecipes} apiKey={API_KEY} />
 
         <div className={styles.toolbar}>
           <input
