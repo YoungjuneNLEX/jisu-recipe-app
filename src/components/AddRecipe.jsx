@@ -52,12 +52,12 @@ export default function AddRecipe({ onAdd, apiKey }) {
       }
 
       const newRecipe = {
+        ...recipe,
         id: videoId,
         title: info.title,
         author: info.author_name,
         thumbnail: info.thumbnail_url,
         videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
-        ...recipe,
         tags: [],
         favorite: false,
         createdAt: Date.now(),

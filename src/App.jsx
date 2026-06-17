@@ -1,19 +1,42 @@
 import { useState, useEffect, useMemo } from 'react'
 import AddRecipe from './components/AddRecipe'
 import RecipeCard from './components/RecipeCard'
+import RecipeDetail from './components/RecipeDetail'
 import { getRecipes, deleteRecipe, toggleFavorite, saveRecipe } from './utils/storage'
 import styles from './App.module.css'
 
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || ''
 
+// Parse the recipe id from a hash like "#/recipe/<id>"
+function parseRouteId(hash) {
+  const m = (hash || '').match(/^#\/recipe\/(.+)$/)
+  return m ? decodeURIComponent(m[1]) : null
+}
+
 export default function App() {
   const [recipes, setRecipes] = useState([])
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
+  const [routeId, setRouteId] = useState(() => parseRouteId(window.location.hash))
 
   useEffect(() => {
     setRecipes(getRecipes())
   }, [])
+
+  useEffect(() => {
+    const onHashChange = () => setRouteId(parseRouteId(window.location.hash))
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  function openRecipe(id) {
+    window.location.hash = `#/recipe/${encodeURIComponent(id)}`
+  }
+
+  function closeRecipe() {
+    if (window.history.length > 1) window.history.back()
+    else window.location.hash = ''
+  }
 
   const filtered = useMemo(() => {
     let list = recipes
@@ -33,6 +56,7 @@ export default function App() {
   function handleDelete(id) {
     if (!confirm('이 레시피를 삭제할까요?')) return
     setRecipes(deleteRecipe(id))
+    if (routeId === id) closeRecipe()
   }
 
   function handleToggleFavorite(id) {
@@ -46,6 +70,19 @@ export default function App() {
   }
 
   const favoriteCount = recipes.filter(r => r.favorite).length
+  const activeRecipe = routeId ? recipes.find(r => r.id === routeId) : null
+
+  if (activeRecipe) {
+    return (
+      <RecipeDetail
+        recipe={activeRecipe}
+        onClose={closeRecipe}
+        onDelete={handleDelete}
+        onToggleFavorite={handleToggleFavorite}
+        onTagAdd={handleTagAdd}
+      />
+    )
+  }
 
   return (
     <div className={styles.app}>
@@ -98,9 +135,9 @@ export default function App() {
               <RecipeCard
                 key={recipe.id}
                 recipe={recipe}
+                onOpen={openRecipe}
                 onDelete={handleDelete}
                 onToggleFavorite={handleToggleFavorite}
-                onTagAdd={handleTagAdd}
               />
             ))}
           </div>
