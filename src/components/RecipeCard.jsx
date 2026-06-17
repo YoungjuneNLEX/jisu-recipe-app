@@ -13,15 +13,6 @@ export default function RecipeCard({ recipe, onOpen, onDelete, onToggleFavorite 
           ) : (
             <div className={styles.thumbPlaceholder}>🍳</div>
           )}
-          {recipe.videoUrl && (
-            <a
-              className={styles.playBtn}
-              href={recipe.videoUrl}
-              target="_blank"
-              rel="noreferrer"
-              onClick={e => e.stopPropagation()}
-            >▶</a>
-          )}
         </div>
 
         <div className={styles.info}>

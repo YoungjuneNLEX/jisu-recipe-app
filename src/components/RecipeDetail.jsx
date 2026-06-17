@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import styles from './RecipeDetail.module.css'
 import { splitIngredients } from '../utils/recipe'
+import { extractVideoId } from '../utils/youtube'
 
 function CheckList({ items }) {
   const [checked, setChecked] = useState({})
@@ -30,6 +31,7 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onEdit, onTogg
 
   const { main: mainIngredients, sauce: parsedSauce } = splitIngredients(recipe.ingredients)
   const sauceIngredients = recipe.sauce?.length > 0 ? recipe.sauce : parsedSauce
+  const videoId = recipe.videoUrl ? extractVideoId(recipe.videoUrl) : null
 
   const sections = [
     {
@@ -95,18 +97,18 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onEdit, onTogg
         {/* Hero */}
         <div className={styles.hero}>
           <div className={styles.thumbWrap}>
-            {recipe.thumbnail ? (
+            {videoId ? (
+              <iframe
+                className={styles.embed}
+                src={`https://www.youtube.com/embed/${videoId}`}
+                title={recipe.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            ) : recipe.thumbnail ? (
               <img className={styles.thumb} src={recipe.thumbnail} alt={recipe.title} />
             ) : (
               <div className={styles.thumbPlaceholder}>🍳</div>
-            )}
-            {recipe.videoUrl && (
-              <a
-                className={styles.playBtn}
-                href={recipe.videoUrl}
-                target="_blank"
-                rel="noreferrer"
-              >▶ 영상 보기</a>
             )}
           </div>
           <h1 className={styles.title}>{recipe.title}</h1>
@@ -203,8 +205,18 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onEdit, onTogg
 
         {/* Bottom actions */}
         <div className={styles.bottomActions}>
-          <button className={styles.editBtn} onClick={() => onEdit(recipe.id)}>✏️ 수정하기</button>
-          <button className={styles.removeBtn} onClick={() => onDelete(recipe.id)}>🗑 삭제하기</button>
+          {recipe.videoUrl && (
+            <a
+              className={styles.youtubeBtn}
+              href={recipe.videoUrl}
+              target="_blank"
+              rel="noreferrer"
+            >▶ 유튜브로 이동</a>
+          )}
+          <div className={styles.actionRow}>
+            <button className={styles.editBtn} onClick={() => onEdit(recipe.id)}>✏️ 수정하기</button>
+            <button className={styles.removeBtn} onClick={() => onDelete(recipe.id)}>🗑 삭제하기</button>
+          </div>
         </div>
 
         <div className={styles.bottomSpace} />
