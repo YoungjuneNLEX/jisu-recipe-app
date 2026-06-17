@@ -12,7 +12,7 @@ export default defineConfig({
         target: 'https://www.youtube.com',
         changeOrigin: true,
         rewrite: path => path.replace(/^\/api\/youtube/, ''),
-        headers: { 'User-Agent': UA },
+        headers: { 'User-Agent': UA, 'Cookie': 'CONSENT=YES+1; SOCS=CAI' },
       },
       '/api/ytimg': {
         target: 'https://i.ytimg.com',

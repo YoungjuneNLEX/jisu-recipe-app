@@ -11,15 +11,34 @@ export function extractVideoId(url) {
 }
 
 export async function fetchVideoInfo(videoId) {
-  // Try oEmbed first
+  const watchUrl = `https://www.youtube.com/watch?v=${videoId}`
+
+  // 1) YouTube oEmbed via our proxy (fast, returns clean JSON)
   try {
-    const res = await fetch(
-      `/api/youtube/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
-    )
-    if (res.ok) return res.json()
+    const res = await fetch(`/api/youtube/oembed?url=${encodeURIComponent(watchUrl)}&format=json`)
+    if (res.ok) {
+      const data = await res.json()
+      if (data && data.title) return data
+    }
   } catch { /* fall through */ }
 
-  // Fallback: parse title/author/thumbnail from YouTube page HTML
+  // 2) noembed.com — fetches YouTube from its own infra, so it still works when
+  //    YouTube blocks our server IP (the usual cause of failures on Vercel).
+  try {
+    const res = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(watchUrl)}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (data && data.title && !data.error) {
+        return {
+          title: data.title,
+          author_name: data.author_name || '',
+          thumbnail_url: data.thumbnail_url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+        }
+      }
+    }
+  } catch { /* fall through */ }
+
+  // 3) Last resort: scrape title/author from the watch page HTML
   const html = await fetchYouTubePage(videoId)
 
   const title = extractTitle(html)
