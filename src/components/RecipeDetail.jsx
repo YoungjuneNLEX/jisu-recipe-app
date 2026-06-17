@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import styles from './RecipeDetail.module.css'
 import { splitIngredients } from '../utils/recipe'
 import { extractVideoId } from '../utils/youtube'
+import YouTubeEmbed from './YouTubeEmbed'
 
 function CheckList({ items }) {
   const [checked, setChecked] = useState({})
@@ -98,13 +99,7 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onEdit, onTogg
         <div className={styles.hero}>
           <div className={styles.thumbWrap}>
             {videoId ? (
-              <iframe
-                className={styles.embed}
-                src={`https://www.youtube.com/embed/${videoId}`}
-                title={recipe.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
+              <YouTubeEmbed videoId={videoId} videoUrl={recipe.videoUrl} title={recipe.title} />
             ) : recipe.thumbnail ? (
               <img className={styles.thumb} src={recipe.thumbnail} alt={recipe.title} />
             ) : (
