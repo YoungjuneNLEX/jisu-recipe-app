@@ -12,16 +12,25 @@ export default function App() {
   const [filter, setFilter] = useState('all')
   const [apiKey, setApiKey] = useState('')
   const [showApiKeyInput, setShowApiKeyInput] = useState(false)
+  const [apiKeyDraft, setApiKeyDraft] = useState('')
 
   useEffect(() => {
     setRecipes(getRecipes())
-    setApiKey(localStorage.getItem(API_KEY_STORAGE) || '')
+    const stored = localStorage.getItem(API_KEY_STORAGE) || ''
+    setApiKey(stored)
+    setApiKeyDraft(stored)
   }, [])
 
-  function handleSaveApiKey(key) {
-    localStorage.setItem(API_KEY_STORAGE, key.trim())
-    setApiKey(key.trim())
+  function handleSaveApiKey() {
+    const trimmed = apiKeyDraft.trim()
+    localStorage.setItem(API_KEY_STORAGE, trimmed)
+    setApiKey(trimmed)
     setShowApiKeyInput(false)
+  }
+
+  function handleOpenApiKeyPanel() {
+    setApiKeyDraft(apiKey)
+    setShowApiKeyInput(v => !v)
   }
 
   const filtered = useMemo(() => {
@@ -66,7 +75,7 @@ export default function App() {
           </div>
           <button
             className={`${styles.apiKeyBtn} ${apiKey ? styles.apiKeyConnected : ''}`}
-            onClick={() => setShowApiKeyInput(v => !v)}
+            onClick={handleOpenApiKeyPanel}
           >
             {apiKey ? '✓ AI' : '🔑 AI 설정'}
           </button>
@@ -82,12 +91,10 @@ export default function App() {
                 className={styles.apiKeyInput}
                 type="password"
                 placeholder="sk-ant-..."
-                defaultValue={apiKey}
-                id="apiKeyField"
+                value={apiKeyDraft}
+                onChange={e => setApiKeyDraft(e.target.value)}
               />
-              <button className={styles.saveBtn} onClick={() => {
-                handleSaveApiKey(document.getElementById('apiKeyField').value)
-              }}>저장</button>
+              <button className={styles.saveBtn} onClick={handleSaveApiKey}>저장</button>
               <button className={styles.cancelBtn} onClick={() => setShowApiKeyInput(false)}>취소</button>
             </div>
           </div>
