@@ -44,6 +44,23 @@
   border-radius: var(--radius);
 }
 
+.moreBtn {
+  margin-top: 2px;
+  padding: 11px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.moreBtn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
 .firstEmpty {
   text-align: center;
   color: var(--text-muted);
