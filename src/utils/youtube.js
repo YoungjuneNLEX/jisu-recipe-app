@@ -21,15 +21,62 @@ export async function fetchVideoInfo(videoId) {
 
   // Fallback: parse title/author/thumbnail from YouTube page HTML
   const html = await fetchYouTubePage(videoId)
-  const titleMatch = html.match(/"title":"((?:[^"\\]|\\.)*)"/)
+
+  const title = extractTitle(html)
+  if (!title) throw new Error('영상 정보를 찾을 수 없어요')
+
   const authorMatch = html.match(/"ownerChannelName":"((?:[^"\\]|\\.)*)"/) ||
     html.match(/"author":"((?:[^"\\]|\\.)*)"/)
-  if (!titleMatch) throw new Error('영상 정보를 찾을 수 없어요')
+
   return {
-    title: titleMatch[1].replace(/\\u0026/g, '&').replace(/\\"/g, '"'),
-    author_name: authorMatch ? authorMatch[1] : '',
+    title,
+    author_name: authorMatch ? unescapeJson(authorMatch[1]) : '',
     thumbnail_url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
   }
+}
+
+// Decode JSON/HTML-escaped sequences from scraped strings
+function unescapeJson(s) {
+  return s
+    .replace(/\\u0026/g, '&')
+    .replace(/\\u003c/gi, '<')
+    .replace(/\\u003e/gi, '>')
+    .replace(/\\"/g, '"')
+    .replace(/\\\//g, '/')
+    .replace(/\\n/g, ' ')
+}
+
+function decodeHtmlEntities(s) {
+  return s
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+}
+
+// Extract the real video title from page HTML, trying reliable sources first.
+// The old approach grabbed the first `"title":"..."` in the page, which often
+// matched unrelated metadata (menus, tracking data) and produced garbage.
+function extractTitle(html) {
+  // 1) videoDetails.title — the canonical title inside ytInitialPlayerResponse
+  const vd = html.match(/"videoDetails":\{(?:[^{}]|\{[^{}]*\})*?"title":"((?:[^"\\]|\\.)*)"/)
+  if (vd) return unescapeJson(vd[1])
+
+  // 2) og:title meta tag (handles either attribute order)
+  const og = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]*)"/i) ||
+    html.match(/<meta[^>]+content="([^"]*)"[^>]+property="og:title"/i)
+  if (og && og[1].trim()) return decodeHtmlEntities(og[1])
+
+  // 3) <title> tag, stripping the trailing " - YouTube"
+  const t = html.match(/<title>([^<]*)<\/title>/i)
+  if (t) {
+    const cleaned = decodeHtmlEntities(t[1]).replace(/\s*-\s*YouTube\s*$/, '').trim()
+    if (cleaned) return cleaned
+  }
+
+  return null
 }
 
 // Fetch YouTube page HTML via Vite proxy (avoids CORS)
