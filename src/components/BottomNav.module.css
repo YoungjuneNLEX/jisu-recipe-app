@@ -1,0 +1,71 @@
+.nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 120;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding-bottom: var(--safe-bottom);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.inner {
+  max-width: 600px;
+  margin: 0 auto;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  position: relative;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  width: 72px;
+  transition: color 0.15s;
+}
+
+.tab svg {
+  width: 25px;
+  height: 25px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.tabActive { color: var(--text-primary); }
+
+/* Center floating action button */
+.fab {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  margin-top: -22px;
+  border-radius: 50%;
+  border: 4px solid var(--bg);
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+  transition: transform 0.15s, opacity 0.15s;
+}
+
+.fab svg {
+  width: 26px;
+  height: 26px;
+}
+
+.fab:hover { opacity: 0.9; }
+.fab:active { transform: scale(0.92); }

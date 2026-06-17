@@ -4,7 +4,7 @@ import { parseFromDescription } from '../utils/parseRecipe'
 import { saveRecipe } from '../utils/storage'
 import styles from './AddRecipe.module.css'
 
-export default function AddRecipe({ onAdd, apiKey, onCreateManual }) {
+export default function AddRecipe({ onAdd, apiKey, onCreateManual, onDone }) {
   const [url, setUrl] = useState('')
   const [status, setStatus] = useState(null)
   const [message, setMessage] = useState('')
@@ -68,7 +68,8 @@ export default function AddRecipe({ onAdd, apiKey, onCreateManual }) {
       setUrl('')
       setStatus('success')
       setMessage(`"${info.title}" 저장됐어요!`)
-      setTimeout(() => setStatus(null), 3000)
+      // Briefly show success, then close the add modal (if any)
+      setTimeout(() => { setStatus(null); onDone?.() }, 1200)
     } catch (err) {
       setStatus('error')
       setMessage(err.message || '오류가 발생했어요')

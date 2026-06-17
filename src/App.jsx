@@ -1,76 +1,60 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import AddRecipe from './components/AddRecipe'
-import RecipeCard from './components/RecipeCard'
 import RecipeDetail from './components/RecipeDetail'
 import RecipeForm from './components/RecipeForm'
+import HomeView from './components/HomeView'
+import CategoryView from './components/CategoryView'
+import BottomNav from './components/BottomNav'
 import { getRecipes, deleteRecipe, toggleFavorite, saveRecipe } from './utils/storage'
 import styles from './App.module.css'
 
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || ''
 
-// Parse the current hash into a route: list / new / detail / edit
+// Parse the current hash into a route: home / categories / new / detail / edit
 function parseRoute(hash) {
   const h = hash || ''
   if (h === '#/new') return { view: 'new' }
+  if (h === '#/categories') return { view: 'categories' }
   const edit = h.match(/^#\/recipe\/(.+)\/edit$/)
   if (edit) return { view: 'edit', id: decodeURIComponent(edit[1]) }
   const detail = h.match(/^#\/recipe\/(.+)$/)
   if (detail) return { view: 'detail', id: decodeURIComponent(detail[1]) }
-  return { view: 'list' }
+  return { view: 'home' }
 }
 
 export default function App() {
   const [recipes, setRecipes] = useState([])
-  const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState('all')
   const [route, setRoute] = useState(() => parseRoute(window.location.hash))
+  const [showAdd, setShowAdd] = useState(false)
 
   useEffect(() => {
     setRecipes(getRecipes())
   }, [])
 
   useEffect(() => {
-    const onHashChange = () => setRoute(parseRoute(window.location.hash))
+    const onHashChange = () => {
+      setRoute(parseRoute(window.location.hash))
+      setShowAdd(false)
+    }
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  function openRecipe(id) {
-    window.location.hash = `#/recipe/${encodeURIComponent(id)}`
-  }
+  const goHome = () => { window.location.hash = '#/' }
+  const goCategories = () => { window.location.hash = '#/categories' }
+  const openRecipe = id => { window.location.hash = `#/recipe/${encodeURIComponent(id)}` }
+  const openEditRecipe = id => { window.location.hash = `#/recipe/${encodeURIComponent(id)}/edit` }
+  const openNewRecipe = () => { setShowAdd(false); window.location.hash = '#/new' }
 
-  function openNewRecipe() {
-    window.location.hash = '#/new'
-  }
-
-  function openEditRecipe(id) {
-    window.location.hash = `#/recipe/${encodeURIComponent(id)}/edit`
-  }
-
-  function closeRecipe() {
+  function closeOverlay() {
     if (window.history.length > 1) window.history.back()
-    else window.location.hash = ''
+    else window.location.hash = '#/'
   }
-
-  const filtered = useMemo(() => {
-    let list = recipes
-    if (filter === 'favorite') list = list.filter(r => r.favorite)
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      list = list.filter(r =>
-        r.title?.toLowerCase().includes(q) ||
-        r.author?.toLowerCase().includes(q) ||
-        r.tags?.some(t => t.toLowerCase().includes(q)) ||
-        r.ingredients?.some(i => i.toLowerCase().includes(q))
-      )
-    }
-    return list
-  }, [recipes, search, filter])
 
   function handleDelete(id) {
     if (!confirm('이 레시피를 삭제할까요?')) return
     setRecipes(deleteRecipe(id))
-    if (route.id === id) window.location.hash = ''
+    if (route.id === id) window.location.hash = '#/'
   }
 
   function handleToggleFavorite(id) {
@@ -89,32 +73,40 @@ export default function App() {
     window.location.hash = `#/recipe/${encodeURIComponent(recipe.id)}`
   }
 
-  const favoriteCount = recipes.filter(r => r.favorite).length
-
+  // ── Full-screen overlay views ──
   if (route.view === 'new') {
-    return <RecipeForm onSave={handleSaveForm} onClose={closeRecipe} />
+    return <RecipeForm onSave={handleSaveForm} onClose={closeOverlay} />
   }
 
   if (route.view === 'edit') {
     const editing = recipes.find(r => r.id === route.id)
     if (editing) {
-      return <RecipeForm recipe={editing} onSave={handleSaveForm} onClose={closeRecipe} />
+      return <RecipeForm recipe={editing} onSave={handleSaveForm} onClose={closeOverlay} />
     }
   }
 
-  const activeRecipe = route.view === 'detail' ? recipes.find(r => r.id === route.id) : null
+  if (route.view === 'detail') {
+    const activeRecipe = recipes.find(r => r.id === route.id)
+    if (activeRecipe) {
+      return (
+        <RecipeDetail
+          recipe={activeRecipe}
+          onClose={closeOverlay}
+          onDelete={handleDelete}
+          onEdit={openEditRecipe}
+          onToggleFavorite={handleToggleFavorite}
+          onTagAdd={handleTagAdd}
+        />
+      )
+    }
+  }
 
-  if (activeRecipe) {
-    return (
-      <RecipeDetail
-        recipe={activeRecipe}
-        onClose={closeRecipe}
-        onDelete={handleDelete}
-        onEdit={openEditRecipe}
-        onToggleFavorite={handleToggleFavorite}
-        onTagAdd={handleTagAdd}
-      />
-    )
+  // ── Tabbed main views (home / categories) with bottom nav ──
+  const view = route.view === 'categories' ? 'categories' : 'home'
+  const cardProps = {
+    onOpen: openRecipe,
+    onDelete: handleDelete,
+    onToggleFavorite: handleToggleFavorite,
   }
 
   return (
@@ -123,59 +115,42 @@ export default function App() {
         <div className={styles.headerContent}>
           <div className={styles.logoArea}>
             <h1 className={styles.logo}>📖 레시피</h1>
-            <p className={styles.subtitle}>유튜브 링크로 레시피 저장</p>
+            <p className={styles.subtitle}>
+              {view === 'categories' ? '카테고리별로 모아보기' : '나만의 레시피 보관함'}
+            </p>
           </div>
         </div>
       </header>
 
       <main className={styles.main}>
-        <AddRecipe onAdd={setRecipes} apiKey={API_KEY} onCreateManual={openNewRecipe} />
+        {view === 'categories'
+          ? <CategoryView recipes={recipes} {...cardProps} />
+          : <HomeView recipes={recipes} {...cardProps} />}
+      </main>
 
-        <div className={styles.toolbar}>
-          <input
-            className={styles.search}
-            type="search"
-            placeholder="레시피, 재료, 태그 검색..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          <div className={styles.filters}>
-            <button
-              className={`${styles.filterBtn} ${filter === 'all' ? styles.active : ''}`}
-              onClick={() => setFilter('all')}
-            >
-              전체 {recipes.length}
-            </button>
-            <button
-              className={`${styles.filterBtn} ${filter === 'favorite' ? styles.active : ''}`}
-              onClick={() => setFilter('favorite')}
-            >
-              ★ {favoriteCount}
-            </button>
+      <BottomNav
+        active={view}
+        onHome={goHome}
+        onCategories={goCategories}
+        onAdd={() => setShowAdd(true)}
+      />
+
+      {showAdd && (
+        <div className={styles.modalOverlay} onClick={() => setShowAdd(false)}>
+          <div className={styles.modalSheet} onClick={e => e.stopPropagation()}>
+            <div className={styles.sheetHandle} />
+            <h2 className={styles.sheetTitle}>레시피 추가</h2>
+            <p className={styles.sheetDesc}>유튜브 링크를 붙여넣거나, 직접 작성할 수 있어요.</p>
+            <AddRecipe
+              onAdd={setRecipes}
+              apiKey={API_KEY}
+              onCreateManual={openNewRecipe}
+              onDone={() => setShowAdd(false)}
+            />
+            <button className={styles.sheetClose} onClick={() => setShowAdd(false)}>닫기</button>
           </div>
         </div>
-
-        {filtered.length === 0 ? (
-          <div className={styles.empty}>
-            <span className={styles.emptyIcon}>🍳</span>
-            {recipes.length === 0
-              ? '아직 저장된 레시피가 없어요.\n유튜브 링크를 붙여넣어 보세요!'
-              : '검색 결과가 없어요'}
-          </div>
-        ) : (
-          <div className={styles.list}>
-            {filtered.map(recipe => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                onOpen={openRecipe}
-                onDelete={handleDelete}
-                onToggleFavorite={handleToggleFavorite}
-              />
-            ))}
-          </div>
-        )}
-      </main>
+      )}
     </div>
   )
 }
