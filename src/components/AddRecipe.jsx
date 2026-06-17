@@ -25,7 +25,13 @@ export default function AddRecipe({ onAdd, apiKey }) {
     setMessage('영상 정보를 가져오는 중...')
 
     try {
-      const info = await fetchVideoInfo(videoId)
+      setMessage('영상 정보 요청 중...')
+      let info
+      try {
+        info = await fetchVideoInfo(videoId)
+      } catch (err) {
+        throw new Error(`fetchVideoInfo 실패: ${err.message} (videoId: ${videoId})`)
+      }
       let recipe = null
 
       if (apiKey) {
