@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/youtube/(.*)", "destination": "/api/youtube/$1" },
+    { "source": "/api/ytimg/(.*)", "destination": "/api/ytimg/$1" }
+  ]
+}
