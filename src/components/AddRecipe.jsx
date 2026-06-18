@@ -81,6 +81,45 @@ export default function AddRecipe({ onAdd, apiKey, onCreateManual, onDone }) {
     }
   }
 
+  async function handleImageRecipe(e) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-selecting the same file
+    if (!file) return
+    if (!apiKey) {
+      setStatus('error')
+      setMessage('이미지 분석은 API 키가 설정되어 있어야 사용할 수 있어요')
+      return
+    }
+
+    setStatus('loading')
+    setMessage('이미지를 분석하는 중...')
+    try {
+      const { extractRecipeFromImage } = await import('../utils/imageRecipe.js')
+      const { recipe, thumbnail } = await extractRecipeFromImage(file, apiKey, setMessage)
+
+      const newRecipe = {
+        ...recipe,
+        id: `img-${Date.now()}`,
+        author: '',
+        thumbnail,
+        videoUrl: '',
+        tags: ['셀프'],
+        favorite: false,
+        createdAt: Date.now(),
+        isSelf: true,
+        sourceType: '이미지',
+      }
+      const updated = saveRecipe(newRecipe)
+      onAdd(updated)
+      setStatus('success')
+      setMessage(`"${newRecipe.title}" 저장됐어요!`)
+      setTimeout(() => { setStatus(null); onDone?.() }, 1200)
+    } catch (err) {
+      setStatus('error')
+      setMessage(err.message || '이미지 분석에 실패했어요')
+    }
+  }
+
   return (
    <div className={styles.container}>
     <div className={styles.wrapper}>
@@ -105,6 +144,17 @@ export default function AddRecipe({ onAdd, apiKey, onCreateManual, onDone }) {
         <p className={`${styles.message} ${styles[status]}`}>{message}</p>
       )}
     </div>
+
+    <label className={`${styles.manualBtn} ${status === 'loading' ? styles.manualDisabled : ''}`}>
+      🖼 이미지로 레시피 만들기
+      <input
+        type="file"
+        accept="image/*"
+        className={styles.hiddenInput}
+        onChange={handleImageRecipe}
+        disabled={status === 'loading'}
+      />
+    </label>
 
     <button type="button" className={styles.manualBtn} onClick={onCreateManual}>
       ✏️ 개인 레시피 추가하기
@@ -133,19 +183,21 @@ async function extractWithClaude(videoId, title, apiKey, setMessage) {
   const { fetchTranscript, fetchDescription, fetchStoryboardFrames, fetchVideoDuration } =
     await import('../utils/youtube.js')
 
-  // Short-form videos (≤3분) are dense with quick cuts, so sample a frame every
-  // 5s instead of 30s and allow more frames to cover the whole clip.
+  // Short-form videos (≤3분) are dense with quick cuts and rely on on-screen
+  // text, so sample a frame every 1s (vs 30s) with bigger, more frames so the
+  // captions/text in them stay readable.
   setMessage('영상 데이터를 수집하는 중...')
   const duration = await fetchVideoDuration(videoId)
   const isShort = duration > 0 && duration <= 180
-  const interval = isShort ? 5 : 30
-  const maxFrames = isShort ? 24 : 12
+  const interval = isShort ? 1 : 30
+  const maxFrames = isShort ? 30 : 12
+  const frameWidth = isShort ? 320 : 200
 
   // Gather all sources in parallel: ASR transcript + description + storyboard frames
   const [transcript, description, frames] = await Promise.all([
     fetchTranscript(videoId),
     fetchDescription(videoId),
-    fetchStoryboardFrames(videoId, interval, maxFrames),
+    fetchStoryboardFrames(videoId, interval, maxFrames, frameWidth),
   ])
 
   // Short videos often lack storyboards entirely — fall back to the thumbnail
@@ -188,9 +240,16 @@ async function extractWithClaude(videoId, title, apiKey, setMessage) {
     source: { type: 'base64', media_type: 'image/jpeg', data: b64 },
   }))
 
+  const shortNote = isShort ? `
+
+⚠️ 이 영상은 숏폼입니다. 프레임 이미지들은 1초 간격으로 잘라낸 화면이에요.
+- 각 프레임에 **화면에 떠 있는 자막/텍스트(재료명, 분량, 조리법 안내)를 최대한 읽어서** 반영하세요.
+- 자막 텍스트가 흐릿해도 보이는 글자를 추측해 활용하고, 화면 속 재료·조리 동작도 관찰하세요.
+- 설명란(아래 텍스트)을 그대로 베끼지 말고, **영상 프레임에서 읽은 내용을 우선**으로 작성하세요.` : ''
+
   const textBlock = {
     type: 'text',
-    text: `유튜브 요리 영상 "${title}"의 레시피를 추출해주세요.
+    text: `유튜브 요리 영상 "${title}"의 레시피를 추출해주세요.${shortNote}
 ${textContent ? `\n아래 텍스트 데이터도 참고하세요:\n${textContent}` : ''}
 
 위 영상 프레임 이미지와 텍스트를 모두 종합해서 아래 JSON 형식으로만 응답하세요.

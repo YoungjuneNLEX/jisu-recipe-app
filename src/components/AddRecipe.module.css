@@ -28,6 +28,28 @@
   border-style: solid;
 }
 
+/* label-as-button needs flex centering for its hidden input */
+.manualBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.manualDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.hiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
 .form {
   display: flex;
   gap: 0;

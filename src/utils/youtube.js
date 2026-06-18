@@ -164,9 +164,9 @@ export async function fetchVideoDuration(videoId) {
 }
 
 // Parse storyboard spec and return evenly-spaced frame images every ~intervalSeconds.
-// maxFrames caps how many storyboard images we send (short-form videos sample
-// more densely, so they need a higher cap to cover the whole clip).
-export async function fetchStoryboardFrames(videoId, intervalSeconds = 30, maxFrames = 12) {
+// maxFrames caps how many storyboard images we send. maxWidth caps frame size —
+// short-form clips raise it so on-screen text/captions stay legible to Claude.
+export async function fetchStoryboardFrames(videoId, intervalSeconds = 30, maxFrames = 12, maxWidth = 200) {
   try {
     const html = await fetchYouTubePage(videoId)
 
@@ -186,14 +186,11 @@ export async function fetchStoryboardFrames(videoId, intervalSeconds = 30, maxFr
 
     if (!levels.length) return []
 
-    // Pick a level no wider than 200px (keeps payload small enough for Claude).
-    // Coarse sampling → highest-quality such level. Fine sampling (short-form)
-    // → the level packing the most frames so we can honor the small interval.
-    const pool = levels.filter(l => l.w <= 200)
+    // Highest-resolution level within the width budget. Bigger frames make
+    // on-screen text/captions readable, which is what short-form clips rely on.
+    const pool = levels.filter(l => l.w <= maxWidth)
     const usable = pool.length ? pool : levels
-    const level = intervalSeconds <= 10
-      ? usable.reduce((a, b) => (b.frameCount > a.frameCount ? b : a))
-      : [...usable].reverse()[0]
+    const level = usable.reduce((a, b) => (b.w > a.w ? b : a))
     const totalImages = Math.ceil(level.frameCount / level.framesPerImg)
     const secondsPerImg = (level.framesPerImg * level.intervalMs) / 1000
     const step = Math.max(1, Math.round(intervalSeconds / secondsPerImg))
