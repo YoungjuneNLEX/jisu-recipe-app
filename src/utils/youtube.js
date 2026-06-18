@@ -38,19 +38,30 @@ export async function fetchVideoInfo(videoId) {
     }
   } catch { /* fall through */ }
 
-  // 3) Last resort: scrape title/author from the watch page HTML
-  const html = await fetchYouTubePage(videoId)
+  // 3) Scrape title/author from the watch page HTML
+  try {
+    const html = await fetchYouTubePage(videoId)
+    const title = extractTitle(html)
+    if (title) {
+      const authorMatch = html.match(/"ownerChannelName":"((?:[^"\\]|\\.)*)"/) ||
+        html.match(/"author":"((?:[^"\\]|\\.)*)"/)
+      return {
+        title,
+        author_name: authorMatch ? unescapeJson(authorMatch[1]) : '',
+        thumbnail_url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      }
+    }
+  } catch { /* fall through */ }
 
-  const title = extractTitle(html)
-  if (!title) throw new Error('영상 정보를 찾을 수 없어요')
-
-  const authorMatch = html.match(/"ownerChannelName":"((?:[^"\\]|\\.)*)"/) ||
-    html.match(/"author":"((?:[^"\\]|\\.)*)"/)
-
+  // 4) Everything failed (video restricted/blocked, or all sources unreachable
+  //    from this network). Don't hard-fail — return a minimal entry so the user
+  //    can still save the video, watch it, and fill in the recipe by hand.
+  //    The thumbnail loads straight from the public image CDN in the browser.
   return {
-    title,
-    author_name: authorMatch ? unescapeJson(authorMatch[1]) : '',
+    title: '',
+    author_name: '',
     thumbnail_url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    incomplete: true,
   }
 }
 

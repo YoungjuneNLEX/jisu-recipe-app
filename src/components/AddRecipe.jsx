@@ -51,10 +51,11 @@ export default function AddRecipe({ onAdd, apiKey, onCreateManual, onDone }) {
         recipe = parsed || { ingredients: [], sauce: [], steps: [], note: '레시피를 자동으로 찾지 못했어요. 직접 입력해 주세요 ✏️' }
       }
 
+      const title = info.title || '제목 미확인 레시피'
       const newRecipe = {
         ...recipe,
         id: videoId,
-        title: info.title,
+        title,
         author: info.author_name,
         thumbnail: info.thumbnail_url,
         videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
@@ -67,9 +68,13 @@ export default function AddRecipe({ onAdd, apiKey, onCreateManual, onDone }) {
       onAdd(updated)
       setUrl('')
       setStatus('success')
-      setMessage(`"${info.title}" 저장됐어요!`)
-      // Briefly show success, then close the add modal (if any)
-      setTimeout(() => { setStatus(null); onDone?.() }, 1200)
+      // When the video info couldn't be fetched, the entry is saved but needs
+      // a manual title/recipe — tell the user instead of failing outright.
+      setMessage(info.incomplete
+        ? '영상 정보를 가져오지 못해 기본값으로 저장했어요. 제목·내용을 직접 수정해 주세요 ✏️'
+        : `"${title}" 저장됐어요!`)
+      // Briefly show the message, then close the add modal (if any)
+      setTimeout(() => { setStatus(null); onDone?.() }, info.incomplete ? 2600 : 1200)
     } catch (err) {
       setStatus('error')
       setMessage(err.message || '오류가 발생했어요')
