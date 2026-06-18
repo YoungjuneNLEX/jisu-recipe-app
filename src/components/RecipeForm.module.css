@@ -253,6 +253,12 @@
 
 .addRow:hover { border-color: var(--accent); color: var(--text-primary); }
 
+.editorHint {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 2px 2px 0;
+}
+
 /* ── Save / error ── */
 .error {
   color: #c62828;
