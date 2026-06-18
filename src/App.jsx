@@ -5,7 +5,7 @@ import RecipeForm from './components/RecipeForm'
 import HomeView from './components/HomeView'
 import CategoryView from './components/CategoryView'
 import BottomNav from './components/BottomNav'
-import { getRecipes, deleteRecipe, toggleFavorite, saveRecipe } from './utils/storage'
+import { getRecipes, deleteRecipe, toggleFavorite, saveRecipe, syncCloud, onRecipesChange } from './utils/storage'
 import styles from './App.module.css'
 
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || ''
@@ -29,6 +29,12 @@ export default function App() {
 
   useEffect(() => {
     setRecipes(getRecipes())
+    // Cloud sync: reflect merged changes, pull on load and when refocusing
+    const off = onRecipesChange(setRecipes)
+    syncCloud()
+    const onFocus = () => syncCloud()
+    window.addEventListener('focus', onFocus)
+    return () => { off(); window.removeEventListener('focus', onFocus) }
   }, [])
 
   useEffect(() => {
