@@ -1,13 +1,35 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { fileToThumbnail } from '../utils/media'
 import { generateRecipeImage } from '../utils/aiImage'
 import styles from './RecipeForm.module.css'
 
-// Editor for a single text list (ingredients / steps), with add & remove rows
+// Editor for a single text list (ingredients / steps), with add & remove rows.
+// Enter adds a new row right below and focuses it (Shift+Enter = newline).
 function ListEditor({ items, setItems, placeholder, multiline }) {
+  const inputRefs = useRef([])
+  const [focusIndex, setFocusIndex] = useState(null)
+
+  useEffect(() => {
+    if (focusIndex != null) {
+      inputRefs.current[focusIndex]?.focus()
+      setFocusIndex(null)
+    }
+  }, [focusIndex, items])
+
   const update = (i, val) => setItems(items.map((it, idx) => (idx === i ? val : it)))
   const remove = i => setItems(items.filter((_, idx) => idx !== i))
-  const add = () => setItems([...items, ''])
+  const add = () => { setItems([...items, '']); setFocusIndex(items.length) }
+  const addAfter = i => {
+    setItems([...items.slice(0, i + 1), '', ...items.slice(i + 1)])
+    setFocusIndex(i + 1)
+  }
+
+  const handleKeyDown = (e, i) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      addAfter(i)
+    }
+  }
 
   return (
     <div className={styles.listEditor}>
@@ -16,24 +38,31 @@ function ListEditor({ items, setItems, placeholder, multiline }) {
           <span className={styles.rowNum}>{i + 1}</span>
           {multiline ? (
             <textarea
+              ref={el => (inputRefs.current[i] = el)}
               className={styles.rowInput}
               rows={2}
               value={item}
               placeholder={`${placeholder} ${i + 1}`}
               onChange={e => update(i, e.target.value)}
+              onKeyDown={e => handleKeyDown(e, i)}
             />
           ) : (
             <input
+              ref={el => (inputRefs.current[i] = el)}
               className={styles.rowInput}
               value={item}
               placeholder={`${placeholder} ${i + 1}`}
               onChange={e => update(i, e.target.value)}
+              onKeyDown={e => handleKeyDown(e, i)}
             />
           )}
           <button type="button" className={styles.rowRemove} onClick={() => remove(i)} aria-label="삭제">✕</button>
         </div>
       ))}
       <button type="button" className={styles.addRow} onClick={add}>+ 추가</button>
+      <p className={styles.editorHint}>
+        엔터로 다음 칸 추가{multiline ? ' (줄바꿈은 Shift+Enter)' : ''}
+      </p>
     </div>
   )
 }
