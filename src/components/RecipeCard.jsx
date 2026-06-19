@@ -17,7 +17,7 @@ export default function RecipeCard({ recipe, onOpen, onDelete, onToggleFavorite 
 
         <div className={styles.info}>
           <div className={styles.topRow}>
-            <span className={styles.author}>{recipe.author}</span>
+            <h3 className={styles.title}>{recipe.title}</h3>
             <div className={styles.actions} onClick={e => e.stopPropagation()}>
               <button
                 className={`${styles.favBtn} ${recipe.favorite ? styles.favorited : ''}`}
@@ -26,8 +26,6 @@ export default function RecipeCard({ recipe, onOpen, onDelete, onToggleFavorite 
               <button className={styles.deleteBtn} onClick={() => onDelete(recipe.id)}>✕</button>
             </div>
           </div>
-
-          <h3 className={styles.title}>{recipe.title}</h3>
 
           <div className={styles.metaRow}>
             {recipe.servings && <span className={styles.metaChip}>🍽 {recipe.servings}</span>}

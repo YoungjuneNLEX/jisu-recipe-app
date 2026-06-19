@@ -48,21 +48,30 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  const goHome = () => { window.location.hash = '#/' }
-  const goCategories = () => { window.location.hash = '#/categories' }
-  const openRecipe = id => { window.location.hash = `#/recipe/${encodeURIComponent(id)}` }
-  const openEditRecipe = id => { window.location.hash = `#/recipe/${encodeURIComponent(id)}/edit` }
-  const openNewRecipe = () => { setShowAdd(false); window.location.hash = '#/new' }
+  // Push adds a history entry (fires hashchange); replace swaps the current one
+  // (so tab switches don't pile up and "back" exits straight to the list).
+  const navPush = hash => { window.location.hash = hash }
+  const navReplace = hash => {
+    window.history.replaceState(null, '', hash)
+    setRoute(parseRoute(hash))
+    setShowAdd(false)
+  }
+
+  const goHome = () => navReplace('#/')
+  const goCategories = () => navReplace('#/categories')
+  const openRecipe = id => navPush(`#/recipe/${encodeURIComponent(id)}`)
+  const openEditRecipe = id => navPush(`#/recipe/${encodeURIComponent(id)}/edit`)
+  const openNewRecipe = () => { setShowAdd(false); navPush('#/new') }
 
   function closeOverlay() {
     if (window.history.length > 1) window.history.back()
-    else window.location.hash = '#/'
+    else navReplace('#/')
   }
 
   function handleDelete(id) {
     if (!confirm('이 레시피를 삭제할까요?')) return
     setRecipes(deleteRecipe(id))
-    if (route.id === id) window.location.hash = '#/'
+    if (route.id === id) closeOverlay()
   }
 
   function handleToggleFavorite(id) {
@@ -82,9 +91,10 @@ export default function App() {
   }
 
   // Save a manually created/edited recipe, then jump to its detail page
+  // (replace the form entry so back goes to the list, not the form)
   function handleSaveForm(recipe) {
     setRecipes(saveRecipe(recipe))
-    window.location.hash = `#/recipe/${encodeURIComponent(recipe.id)}`
+    navReplace(`#/recipe/${encodeURIComponent(recipe.id)}`)
   }
 
   // ── Full-screen overlay views ──
