@@ -149,8 +149,10 @@ export default function RecipeForm({
     setAddingCat(false)
   }
 
-  function submitRenameCategory(e) {
-    e.preventDefault()
+  // Commit on Enter AND on blur — committing on blur fixes mobile keyboards,
+  // where the input loses focus before the form's submit can fire.
+  function commitRenameCategory() {
+    if (renamingCat == null) return
     const next = renameDraft.trim()
     if (next && next !== renamingCat) {
       onRenameCategory?.(renamingCat, next)
@@ -272,13 +274,13 @@ export default function RecipeForm({
             <div className={styles.catManage}>
               {categories.map(c => (
                 renamingCat === c ? (
-                  <form key={c} onSubmit={submitRenameCategory} className={styles.catManageRow}>
+                  <form key={c} onSubmit={e => { e.preventDefault(); commitRenameCategory() }} className={styles.catManageRow}>
                     <input
                       autoFocus
                       className={styles.catInput}
                       value={renameDraft}
                       onChange={e => setRenameDraft(e.target.value)}
-                      onBlur={() => setRenamingCat(null)}
+                      onBlur={commitRenameCategory}
                     />
                   </form>
                 ) : (
