@@ -1,30 +1,14 @@
 import { useState } from 'react'
 import RecipeCard from './RecipeCard'
+import { categoryColor, UNCATEGORIZED } from '../utils/category'
 import styles from './CategoryView.module.css'
 
-const UNTAGGED = '미분류'
-
-// Group recipes into folders by tag. A recipe with multiple tags shows up in
-// each matching folder; recipes with no tags fall into "미분류".
-function groupByTag(recipes) {
-  const groups = {}
-  for (const r of recipes) {
-    const tags = r.tags?.length ? r.tags : [UNTAGGED]
-    for (const tag of tags) (groups[tag] ||= []).push(r)
-  }
-  return Object.entries(groups).sort((a, b) => {
-    if (a[0] === UNTAGGED) return 1
-    if (b[0] === UNTAGGED) return -1
-    return b[1].length - a[1].length
-  })
-}
-
-function FolderIcon({ open }) {
+function FolderIcon({ open, color }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+    <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8"
       strokeLinecap="round" strokeLinejoin="round" className={styles.folderIcon} aria-hidden="true">
       {open ? (
-        <path d="M3.5 8a1.8 1.8 0 0 1 1.8-1.8h2.7a1.8 1.8 0 0 1 1.3.5l.9 1a1.8 1.8 0 0 0 1.3.5h6.2A1.8 1.8 0 0 1 21.5 10l-.3.3M3.5 8v9.3a1.2 1.2 0 0 0 1.2 1.2h12.6a1.5 1.5 0 0 0 1.4-1l2-6a1 1 0 0 0-1-1.3H6.8a1.5 1.5 0 0 0-1.4 1L3.5 17" />
+        <path d="M3.8 7.5a1.8 1.8 0 0 1 1.8-1.8h2.8a1.8 1.8 0 0 1 1.3.5l1 1a1.8 1.8 0 0 0 1.3.5h6A1.8 1.8 0 0 1 20 9.5M3.8 7.5v9.2a1.8 1.8 0 0 0 1.8 1.8h11.5a1.5 1.5 0 0 0 1.45-1.1l1.4-5a1 1 0 0 0-.96-1.27H7a1.5 1.5 0 0 0-1.45 1.1L3.8 16.7" />
       ) : (
         <path d="M3.8 7.5a1.8 1.8 0 0 1 1.8-1.8h2.8a1.8 1.8 0 0 1 1.3.5l1 1a1.8 1.8 0 0 0 1.3.5h6A1.8 1.8 0 0 1 20 9.5v7.2a1.8 1.8 0 0 1-1.8 1.8H5.6a1.8 1.8 0 0 1-1.8-1.8V7.5Z" />
       )}
@@ -32,45 +16,121 @@ function FolderIcon({ open }) {
   )
 }
 
-function Folder({ tag, items, cardProps }) {
+function Folder({ name, items, cardProps, special, onRename, onDelete }) {
   const [open, setOpen] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(name)
+  const color = categoryColor(special ? UNCATEGORIZED : name)
+
+  function submitRename(e) {
+    e.preventDefault()
+    const next = draft.trim()
+    if (next && next !== name) onRename(name, next)
+    setEditing(false)
+  }
+
   return (
-    <div className={styles.folder}>
-      <button className={styles.folderHead} onClick={() => setOpen(o => !o)}>
-        <FolderIcon open={open} />
-        <span className={styles.folderName}>{tag === UNTAGGED ? tag : `#${tag}`}</span>
-        <span className={styles.count}>{items.length}</span>
-        <span className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}>⌄</span>
-      </button>
+    <div className={styles.folder} style={{ borderColor: color.bg }}>
+      <div className={styles.folderHead} style={{ background: color.bg }}>
+        {editing ? (
+          <form onSubmit={submitRename} className={styles.renameForm}>
+            <input
+              autoFocus
+              className={styles.renameInput}
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              onBlur={() => setEditing(false)}
+            />
+          </form>
+        ) : (
+          <button className={styles.folderToggle} onClick={() => setOpen(o => !o)}>
+            <FolderIcon open={open} color={color.fg} />
+            <span className={styles.folderName} style={{ color: color.fg }}>
+              {special ? UNCATEGORIZED : name}
+            </span>
+            <span className={styles.count} style={{ color: color.fg }}>{items.length}</span>
+            <span className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`} style={{ color: color.fg }}>⌄</span>
+          </button>
+        )}
+        {!special && !editing && (
+          <div className={styles.folderActions}>
+            <button className={styles.folderBtn} onClick={() => { setDraft(name); setEditing(true) }} aria-label="이름 변경">✎</button>
+            <button className={styles.folderBtn} onClick={() => onDelete(name)} aria-label="삭제">🗑</button>
+          </div>
+        )}
+      </div>
+
       {open && (
-        <div className={styles.folderBody}>
-          {items.map(r => <RecipeCard key={r.id} recipe={r} {...cardProps} />)}
-        </div>
+        items.length > 0 ? (
+          <div className={styles.folderBody}>
+            {items.map(r => <RecipeCard key={r.id} recipe={r} {...cardProps} />)}
+          </div>
+        ) : (
+          <p className={styles.emptyFolder}>아직 이 카테고리에 담긴 레시피가 없어요</p>
+        )
       )}
     </div>
   )
 }
 
-export default function CategoryView({ recipes, onOpen, onDelete, onToggleFavorite }) {
-  const groups = groupByTag(recipes)
-  const cardProps = { onOpen, onDelete, onToggleFavorite }
+export default function CategoryView({ recipes, categories, onAddCategory, onRenameCategory, onDeleteCategory, ...cardProps }) {
+  const [adding, setAdding] = useState(false)
+  const [newName, setNewName] = useState('')
 
-  if (recipes.length === 0) {
-    return (
-      <div className={styles.empty}>
-        <span className={styles.emptyIcon}>🗂</span>
-        분류할 레시피가 아직 없어요.
-        <br />레시피에 태그를 달면 폴더로 정리돼요.
-      </div>
-    )
+  const known = new Set(categories)
+  const uncategorized = recipes.filter(r => !r.category || !known.has(r.category))
+
+  function submitAdd(e) {
+    e.preventDefault()
+    const name = newName.trim()
+    if (name) onAddCategory(name)
+    setNewName('')
+    setAdding(false)
   }
 
   return (
     <div className={styles.categories}>
-      <p className={styles.hint}>태그별로 정리된 폴더예요. 눌러서 펼치거나 접을 수 있어요 📁</p>
-      {groups.map(([tag, items]) => (
-        <Folder key={tag} tag={tag} items={items} cardProps={cardProps} />
-      ))}
+      <div className={styles.topBar}>
+        <p className={styles.hint}>카테고리(폴더)로 레시피를 정리해요 📁</p>
+        {adding ? (
+          <form onSubmit={submitAdd} className={styles.addForm}>
+            <input
+              autoFocus
+              className={styles.addInput}
+              value={newName}
+              placeholder="새 카테고리 이름"
+              onChange={e => setNewName(e.target.value)}
+              onBlur={() => { setNewName(''); setAdding(false) }}
+            />
+          </form>
+        ) : (
+          <button className={styles.addBtn} onClick={() => setAdding(true)}>+ 새 카테고리</button>
+        )}
+      </div>
+
+      {categories.length === 0 && uncategorized.length === 0 ? (
+        <div className={styles.empty}>
+          <span className={styles.emptyIcon}>🗂</span>
+          아직 레시피가 없어요.
+          <br />카테고리를 만들어 정리해 보세요.
+        </div>
+      ) : (
+        <>
+          {categories.map(name => (
+            <Folder
+              key={name}
+              name={name}
+              items={recipes.filter(r => r.category === name)}
+              cardProps={cardProps}
+              onRename={onRenameCategory}
+              onDelete={onDeleteCategory}
+            />
+          ))}
+          {uncategorized.length > 0 && (
+            <Folder name={UNCATEGORIZED} items={uncategorized} cardProps={cardProps} special />
+          )}
+        </>
+      )}
     </div>
   )
 }

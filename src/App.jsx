@@ -6,7 +6,10 @@ import RecipeForm from './components/RecipeForm'
 import HomeView from './components/HomeView'
 import CategoryView from './components/CategoryView'
 import BottomNav from './components/BottomNav'
-import { getRecipes, deleteRecipe, toggleFavorite, saveRecipe, syncCloud, onRecipesChange } from './utils/storage'
+import {
+  getRecipes, deleteRecipe, toggleFavorite, saveRecipe, syncCloud, onRecipesChange,
+  getCategories, addCategory, renameCategory, deleteCategory,
+} from './utils/storage'
 import styles from './App.module.css'
 
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || ''
@@ -25,19 +28,37 @@ function parseRoute(hash) {
 
 export default function App() {
   const [recipes, setRecipes] = useState([])
+  const [categories, setCategories] = useState([])
   const [route, setRoute] = useState(() => parseRoute(window.location.hash))
   const [showAdd, setShowAdd] = useState(false)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
     setRecipes(getRecipes())
+    setCategories(getCategories())
     // Cloud sync: reflect merged changes, pull on load and when refocusing
-    const off = onRecipesChange(setRecipes)
+    const off = onRecipesChange(() => {
+      setRecipes(getRecipes())
+      setCategories(getCategories())
+    })
     syncCloud()
     const onFocus = () => syncCloud()
     window.addEventListener('focus', onFocus)
     return () => { off(); window.removeEventListener('focus', onFocus) }
   }, [])
+
+  const handleAddCategory = name => setCategories(addCategory(name))
+  function handleRenameCategory(oldName, newName) {
+    renameCategory(oldName, newName)
+    setCategories(getCategories())
+    setRecipes(getRecipes())
+  }
+  function handleDeleteCategory(name) {
+    if (!confirm(`'${name}' 카테고리를 삭제할까요?\n(안에 있는 레시피는 미분류로 이동해요)`)) return
+    deleteCategory(name)
+    setCategories(getCategories())
+    setRecipes(getRecipes())
+  }
 
   useEffect(() => {
     const onHashChange = () => {
@@ -99,13 +120,30 @@ export default function App() {
 
   // ── Full-screen overlay views ──
   if (route.view === 'new') {
-    return <RecipeForm onSave={handleSaveForm} onClose={closeOverlay} apiKey={API_KEY} />
+    return (
+      <RecipeForm
+        onSave={handleSaveForm}
+        onClose={closeOverlay}
+        apiKey={API_KEY}
+        categories={categories}
+        onAddCategory={handleAddCategory}
+      />
+    )
   }
 
   if (route.view === 'edit') {
     const editing = recipes.find(r => r.id === route.id)
     if (editing) {
-      return <RecipeForm recipe={editing} onSave={handleSaveForm} onClose={closeOverlay} apiKey={API_KEY} />
+      return (
+        <RecipeForm
+          recipe={editing}
+          onSave={handleSaveForm}
+          onClose={closeOverlay}
+          apiKey={API_KEY}
+          categories={categories}
+          onAddCategory={handleAddCategory}
+        />
+      )
     }
   }
 
@@ -185,7 +223,16 @@ export default function App() {
             </div>
           )
           : view === 'categories'
-            ? <CategoryView recipes={recipes} {...cardProps} />
+            ? (
+              <CategoryView
+                recipes={recipes}
+                categories={categories}
+                onAddCategory={handleAddCategory}
+                onRenameCategory={handleRenameCategory}
+                onDeleteCategory={handleDeleteCategory}
+                {...cardProps}
+              />
+            )
             : <HomeView recipes={recipes} {...cardProps} />}
       </main>
 

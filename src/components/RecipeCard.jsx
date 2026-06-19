@@ -1,6 +1,10 @@
 import styles from './RecipeCard.module.css'
+import { categoryColor, UNCATEGORIZED } from '../utils/category'
 
 export default function RecipeCard({ recipe, onOpen, onDelete, onToggleFavorite }) {
+  const category = recipe.category || UNCATEGORIZED
+  const color = categoryColor(category)
+
   return (
     <div className={styles.card}>
       <div className={styles.header} onClick={() => onOpen(recipe.id)}>
@@ -22,6 +26,12 @@ export default function RecipeCard({ recipe, onOpen, onDelete, onToggleFavorite 
               >{recipe.favorite ? '★' : '☆'}</button>
               <button className={styles.deleteBtn} onClick={() => onDelete(recipe.id)}>✕</button>
             </div>
+          </div>
+
+          <div className={styles.catRow}>
+            <span className={styles.category} style={{ background: color.bg, color: color.fg }}>
+              📁 {category}
+            </span>
           </div>
 
           {recipe.tags?.length > 0 && (
