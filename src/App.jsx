@@ -73,6 +73,12 @@ export default function App() {
     setRecipes(saveRecipe({ ...recipe, tags: [...(recipe.tags || []), tag] }))
   }
 
+  function handleTagRemove(id, tag) {
+    const recipe = recipes.find(r => r.id === id)
+    if (!recipe) return
+    setRecipes(saveRecipe({ ...recipe, tags: (recipe.tags || []).filter(t => t !== tag) }))
+  }
+
   // Save a manually created/edited recipe, then jump to its detail page
   function handleSaveForm(recipe) {
     setRecipes(saveRecipe(recipe))
@@ -102,6 +108,7 @@ export default function App() {
           onEdit={openEditRecipe}
           onToggleFavorite={handleToggleFavorite}
           onTagAdd={handleTagAdd}
+          onTagRemove={handleTagRemove}
         />
       )
     }
