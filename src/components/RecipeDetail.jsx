@@ -24,9 +24,10 @@ function CheckList({ items }) {
   )
 }
 
-export default function RecipeDetail({ recipe, onClose, onDelete, onEdit, onToggleFavorite, onTagAdd }) {
+export default function RecipeDetail({ recipe, onClose, onDelete, onEdit, onToggleFavorite, onTagAdd, onTagRemove }) {
   const [tagInput, setTagInput] = useState('')
   const [editingTag, setEditingTag] = useState(false)
+  const [renaming, setRenaming] = useState(null) // tag currently being renamed
   const [active, setActive] = useState('ingredients')
   const sectionRefs = useRef({})
 
@@ -68,10 +69,22 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onEdit, onTogg
   function handleTagSubmit(e) {
     e.preventDefault()
     const tag = tagInput.trim()
-    if (!tag) return
-    onTagAdd(recipe.id, tag)
+    // When renaming, drop the old tag first; empty input just deletes it
+    if (renaming && renaming !== tag) onTagRemove(recipe.id, renaming)
+    if (tag) onTagAdd(recipe.id, tag)
+    resetTagEditor()
+  }
+
+  function resetTagEditor() {
     setTagInput('')
     setEditingTag(false)
+    setRenaming(null)
+  }
+
+  function startRename(tag) {
+    setTagInput(tag)
+    setRenaming(tag)
+    setEditingTag(true)
   }
 
   return (
@@ -117,7 +130,16 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onEdit, onTogg
 
           {/* Tags */}
           <div className={styles.tagEditor}>
-            {recipe.tags?.map(t => <span key={t} className={styles.tag}>#{t}</span>)}
+            {recipe.tags?.map(t => (
+              <span key={t} className={styles.tag}>
+                <button className={styles.tagLabel} onClick={() => startRename(t)}>#{t}</button>
+                <button
+                  className={styles.tagRemove}
+                  onClick={() => onTagRemove(recipe.id, t)}
+                  aria-label={`${t} 삭제`}
+                >✕</button>
+              </span>
+            ))}
             {editingTag ? (
               <form onSubmit={handleTagSubmit} style={{ display: 'inline' }}>
                 <input
@@ -126,7 +148,7 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onEdit, onTogg
                   value={tagInput}
                   onChange={e => setTagInput(e.target.value)}
                   placeholder="태그"
-                  onBlur={() => setEditingTag(false)}
+                  onBlur={resetTagEditor}
                 />
               </form>
             ) : (
