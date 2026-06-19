@@ -78,6 +78,9 @@ export default function RecipeForm({ recipe, onSave, onClose, apiKey }) {
   const [note, setNote] = useState(recipe?.note || '')
   const [mediaStatus, setMediaStatus] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
+  const [showAiModal, setShowAiModal] = useState(false)
+  const [aiInstruction, setAiInstruction] = useState('')
+  const [aiError, setAiError] = useState('')
   const [error, setError] = useState('')
 
   async function handleFile(e) {
@@ -96,27 +99,31 @@ export default function RecipeForm({ recipe, onSave, onClose, apiKey }) {
     }
   }
 
+  function openAiModal() {
+    setAiError('')
+    setShowAiModal(true)
+  }
+
   async function handleGenerateImage() {
     const cleanIngredients = ingredients.map(s => s.trim()).filter(Boolean)
     if (!title.trim() && cleanIngredients.length === 0) {
-      setError('레시피 이름이나 재료를 먼저 입력해 주세요')
+      setAiError('레시피 이름이나 재료를 먼저 입력해 주세요')
       return
     }
-    setError('')
+    setAiError('')
     setAiLoading(true)
-    setMediaStatus('AI가 어울리는 그림을 그리는 중... 🎨')
     try {
       const dataUrl = await generateRecipeImage({
         title: title.trim(),
         ingredients: cleanIngredients,
         steps: steps.map(s => s.trim()).filter(Boolean),
+        instruction: aiInstruction,
         apiKey,
       })
       setThumbnail(dataUrl)
-      setMediaStatus('')
+      setShowAiModal(false)
     } catch (err) {
-      setMediaStatus('')
-      setError(err.message || 'AI 이미지를 만들지 못했어요')
+      setAiError(err.message || 'AI 이미지를 만들지 못했어요')
     } finally {
       setAiLoading(false)
     }
@@ -183,13 +190,8 @@ export default function RecipeForm({ recipe, onSave, onClose, apiKey }) {
               onChange={handleFile}
             />
           </label>
-          <button
-            type="button"
-            className={styles.aiBtn}
-            onClick={handleGenerateImage}
-            disabled={aiLoading}
-          >
-            {aiLoading ? '🎨 AI가 그림 그리는 중...' : '✨ AI 추천 이미지 만들기'}
+          <button type="button" className={styles.aiBtn} onClick={openAiModal}>
+            {thumbnail ? '✨ AI 이미지 수정 / 재생성' : '✨ AI 추천 이미지 만들기'}
           </button>
           <p className={styles.aiHint}>레시피 내용을 보고 귀여운 파스텔 그림을 그려줘요</p>
 
@@ -248,6 +250,41 @@ export default function RecipeForm({ recipe, onSave, onClose, apiKey }) {
 
         <div className={styles.bottomSpace} />
       </div>
+
+      {showAiModal && (
+        <div className={styles.aiModalOverlay} onClick={() => !aiLoading && setShowAiModal(false)}>
+          <div className={styles.aiModal} onClick={e => e.stopPropagation()}>
+            <h3 className={styles.aiModalTitle}>✨ AI 이미지 {thumbnail ? '수정' : '만들기'}</h3>
+            <p className={styles.aiModalDesc}>
+              원하는 그림 스타일이나 내용을 적어주세요. 비워두면 레시피 내용으로 그려요.
+            </p>
+            <textarea
+              className={styles.aiModalInput}
+              rows={3}
+              value={aiInstruction}
+              placeholder="예) 오이를 더 크게, 배경은 연한 노랑, 더 귀엽고 동글동글하게"
+              onChange={e => setAiInstruction(e.target.value)}
+            />
+            {aiError && <p className={styles.aiModalError}>{aiError}</p>}
+            <div className={styles.aiModalActions}>
+              <button
+                type="button"
+                className={styles.aiCancel}
+                onClick={() => setShowAiModal(false)}
+                disabled={aiLoading}
+              >취소</button>
+              <button
+                type="button"
+                className={styles.aiGenerate}
+                onClick={handleGenerateImage}
+                disabled={aiLoading}
+              >
+                {aiLoading ? '🎨 그리는 중...' : (thumbnail ? '다시 생성' : '생성')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

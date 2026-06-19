@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import AddRecipe from './components/AddRecipe'
+import RecipeCard from './components/RecipeCard'
 import RecipeDetail from './components/RecipeDetail'
 import RecipeForm from './components/RecipeForm'
 import HomeView from './components/HomeView'
@@ -26,6 +27,7 @@ export default function App() {
   const [recipes, setRecipes] = useState([])
   const [route, setRoute] = useState(() => parseRoute(window.location.hash))
   const [showAdd, setShowAdd] = useState(false)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     setRecipes(getRecipes())
@@ -122,6 +124,16 @@ export default function App() {
     onToggleFavorite: handleToggleFavorite,
   }
 
+  const query = search.trim().toLowerCase()
+  const searchResults = query
+    ? recipes.filter(r =>
+        r.title?.toLowerCase().includes(query) ||
+        r.author?.toLowerCase().includes(query) ||
+        r.tags?.some(t => t.toLowerCase().includes(query)) ||
+        r.ingredients?.some(i => i.toLowerCase().includes(query))
+      )
+    : null
+
   return (
     <div className={styles.app}>
       <header className={styles.header}>
@@ -133,12 +145,38 @@ export default function App() {
             </p>
           </div>
         </div>
+        <div className={styles.searchBar}>
+          <span className={styles.searchIcon}>🔍</span>
+          <input
+            className={styles.search}
+            type="search"
+            placeholder="레시피, 재료, 태그 검색..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className={styles.searchClear} onClick={() => setSearch('')} aria-label="검색 지우기">✕</button>
+          )}
+        </div>
       </header>
 
       <main className={styles.main}>
-        {view === 'categories'
-          ? <CategoryView recipes={recipes} {...cardProps} />
-          : <HomeView recipes={recipes} {...cardProps} />}
+        {searchResults
+          ? (
+            <div className={styles.searchView}>
+              <p className={styles.searchCount}>검색 결과 {searchResults.length}개</p>
+              {searchResults.length === 0 ? (
+                <div className={styles.searchEmpty}>🔍 검색 결과가 없어요</div>
+              ) : (
+                <div className={styles.searchList}>
+                  {searchResults.map(r => <RecipeCard key={r.id} recipe={r} {...cardProps} />)}
+                </div>
+              )}
+            </div>
+          )
+          : view === 'categories'
+            ? <CategoryView recipes={recipes} {...cardProps} />
+            : <HomeView recipes={recipes} {...cardProps} />}
       </main>
 
       <BottomNav
