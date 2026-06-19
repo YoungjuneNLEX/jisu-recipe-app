@@ -41,8 +41,10 @@ export default function HomeView({ recipes, onOpen, onDelete, onToggleFavorite }
   const cardProps = { onOpen, onDelete, onToggleFavorite }
   const latest = [...recipes].sort(byNewest).slice(0, LIMIT)
   const favorites = recipes.filter(r => r.favorite).sort(byNewest)
+  // "개인 레시피" is driven purely by the 셀프 tag — remove the tag and it drops
+  // out of this section and falls into 미분류 in the category view.
   const selfRecipes = recipes
-    .filter(r => r.isSelf || r.tags?.includes('셀프'))
+    .filter(r => r.tags?.includes('셀프'))
     .sort(byNewest)
 
   if (recipes.length === 0) {
