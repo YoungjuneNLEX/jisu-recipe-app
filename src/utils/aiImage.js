@@ -1,7 +1,7 @@
 // Ask Claude to "draw" a simple, cute pastel illustration of the recipe's main
 // subject as an SVG (Anthropic has no photo generation, but Claude writes great
 // vector art). Returns an <img>-ready data URL.
-export async function generateRecipeImage({ title, ingredients = [], steps = [], apiKey }) {
+export async function generateRecipeImage({ title, ingredients = [], steps = [], instruction = '', apiKey }) {
   if (!apiKey) throw new Error('AI 이미지는 API 키가 설정되어 있어야 사용할 수 있어요')
 
   const summary = [
@@ -10,9 +10,13 @@ export async function generateRecipeImage({ title, ingredients = [], steps = [],
     steps.length && `조리 요약: ${steps.slice(0, 3).join(' / ').slice(0, 300)}`,
   ].filter(Boolean).join('\n')
 
+  const request = instruction.trim()
+    ? `\n\n[사용자 요청사항 — 반드시 반영]\n${instruction.trim()}`
+    : ''
+
   const prompt = `아래 레시피를 보고, 이 요리를 대표하는 재료나 음식을 귀엽고 단순한 플랫 일러스트로 그려줘.
 
-${summary}
+${summary}${request}
 
 요구사항:
 - 부드러운 파스텔 톤 색상 사용
