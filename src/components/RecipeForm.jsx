@@ -67,9 +67,12 @@ function ListEditor({ items, setItems, placeholder, multiline }) {
   )
 }
 
-export default function RecipeForm({ recipe, onSave, onClose, apiKey }) {
+export default function RecipeForm({ recipe, onSave, onClose, apiKey, categories = [], onAddCategory }) {
   const isEdit = !!recipe
   const [title, setTitle] = useState(recipe?.title || '')
+  const [category, setCategory] = useState(recipe?.category || '')
+  const [addingCat, setAddingCat] = useState(false)
+  const [newCat, setNewCat] = useState('')
   const [thumbnail, setThumbnail] = useState(recipe?.thumbnail || '')
   const [ingredients, setIngredients] = useState(
     recipe?.ingredients?.length ? recipe.ingredients : ['']
@@ -129,6 +132,17 @@ export default function RecipeForm({ recipe, onSave, onClose, apiKey }) {
     }
   }
 
+  function handleCreateCategory(e) {
+    e.preventDefault()
+    const name = newCat.trim()
+    if (name) {
+      onAddCategory?.(name)
+      setCategory(name)
+    }
+    setNewCat('')
+    setAddingCat(false)
+  }
+
   function handleSave() {
     const cleanTitle = title.trim()
     if (!cleanTitle) {
@@ -151,6 +165,7 @@ export default function RecipeForm({ recipe, onSave, onClose, apiKey }) {
       author: base.author ?? '나의 레시피',
       thumbnail: thumbnail || base.thumbnail || '',
       videoUrl: base.videoUrl || '',
+      category,
       ingredients: cleanIngredients,
       sauce: base.sauce || [],
       steps: cleanSteps,
@@ -216,6 +231,40 @@ export default function RecipeForm({ recipe, onSave, onClose, apiKey }) {
             placeholder="예) 엄마표 비름나물 무침"
             onChange={e => setTitle(e.target.value)}
           />
+        </section>
+
+        {/* Category */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>📁 카테고리</h2>
+          <div className={styles.catPicker}>
+            <button
+              type="button"
+              className={`${styles.catChip} ${!category ? styles.catChipActive : ''}`}
+              onClick={() => setCategory('')}
+            >미분류</button>
+            {categories.map(c => (
+              <button
+                type="button"
+                key={c}
+                className={`${styles.catChip} ${category === c ? styles.catChipActive : ''}`}
+                onClick={() => setCategory(c)}
+              >{c}</button>
+            ))}
+            {addingCat ? (
+              <form onSubmit={handleCreateCategory} style={{ display: 'inline' }}>
+                <input
+                  autoFocus
+                  className={styles.catInput}
+                  value={newCat}
+                  placeholder="새 카테고리"
+                  onChange={e => setNewCat(e.target.value)}
+                  onBlur={() => { setNewCat(''); setAddingCat(false) }}
+                />
+              </form>
+            ) : (
+              <button type="button" className={styles.catAdd} onClick={() => setAddingCat(true)}>+ 새 카테고리</button>
+            )}
+          </div>
         </section>
 
         {/* Ingredients */}

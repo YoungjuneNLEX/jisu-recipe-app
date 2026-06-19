@@ -1,6 +1,7 @@
 const KEY = 'jisu_recipes'
+const CAT_KEY = 'jisu_categories'
 
-// ── Local storage (instant, offline-capable cache) ──
+// ── Local: recipes (instant, offline-capable cache) ──
 function loadLocal() {
   try {
     return JSON.parse(localStorage.getItem(KEY) || '[]')
@@ -32,7 +33,6 @@ export function saveRecipe(recipe) {
 export function deleteRecipe(id) {
   const list = loadLocal()
   const i = list.findIndex(r => r.id === id)
-  // Keep a tombstone so the deletion syncs to other devices
   if (i >= 0) list[i] = { id, deleted: true, updatedAt: Date.now() }
   saveLocal(list)
   schedulePush()
@@ -51,18 +51,69 @@ export function toggleFavorite(id) {
   return getRecipes()
 }
 
+// ── Local: categories (folders) ──
+function loadCats() {
+  try {
+    const v = JSON.parse(localStorage.getItem(CAT_KEY) || 'null')
+    return v && Array.isArray(v.list) ? v : { list: [], updatedAt: 0 }
+  } catch {
+    return { list: [], updatedAt: 0 }
+  }
+}
+
+function saveCatsLocal(obj) {
+  localStorage.setItem(CAT_KEY, JSON.stringify(obj))
+}
+
+export function getCategories() {
+  return loadCats().list
+}
+
+export function addCategory(name) {
+  const { list } = loadCats()
+  if (!name || list.includes(name)) return list
+  const next = [...list, name]
+  saveCatsLocal({ list: next, updatedAt: Date.now() })
+  schedulePush()
+  return next
+}
+
+export function renameCategory(oldName, newName) {
+  if (!newName || oldName === newName) return getCategories()
+  const list = [...new Set(loadCats().list.map(c => (c === oldName ? newName : c)))]
+  saveCatsLocal({ list, updatedAt: Date.now() })
+  // Move recipes in the renamed folder
+  const recipes = loadLocal().map(r =>
+    r.category === oldName ? { ...r, category: newName, updatedAt: Date.now() } : r
+  )
+  saveLocal(recipes)
+  schedulePush()
+  return list
+}
+
+export function deleteCategory(name) {
+  const list = loadCats().list.filter(c => c !== name)
+  saveCatsLocal({ list, updatedAt: Date.now() })
+  // Recipes in the deleted folder fall back to 미분류
+  const recipes = loadLocal().map(r =>
+    r.category === name ? { ...r, category: '', updatedAt: Date.now() } : r
+  )
+  saveLocal(recipes)
+  schedulePush()
+  return list
+}
+
 // ── Cloud sync ──
 let listeners = []
 
-// Subscribe to recipe-list changes coming from cloud sync. Returns unsubscribe.
+// Subscribe to changes coming from cloud sync. Returns unsubscribe.
 export function onRecipesChange(fn) {
   listeners.push(fn)
   return () => { listeners = listeners.filter(l => l !== fn) }
 }
 
 function emit() {
-  const visible = getRecipes()
-  listeners.forEach(l => l(visible))
+  listeners.forEach(l => l())
 }
 
 // Last-write-wins merge by id; keeps tombstones so deletes don't resurrect
@@ -76,24 +127,38 @@ function mergeLists(a, b) {
   return [...map.values()].sort((x, y) => (y.createdAt || 0) - (x.createdAt || 0))
 }
 
-// Push local list to the cloud, merge the response back in, and notify the UI.
+// Push local state to the cloud, merge the response back in, and notify the UI.
 export async function syncCloud() {
-  const local = loadLocal()
+  const localRecipes = loadLocal()
+  const localCats = loadCats()
   try {
     const res = await fetch('/api/recipes', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ recipes: local }),
+      body: JSON.stringify({ recipes: localRecipes, categories: localCats }),
     })
     if (!res.ok) return
     const data = await res.json()
-    if (!Array.isArray(data.recipes)) return
-    const merged = mergeLists(local, data.recipes)
-    // Only rewrite + notify when the cloud actually changed something
-    if (JSON.stringify(merged) !== JSON.stringify(local)) {
-      saveLocal(merged)
-      emit()
+    let changed = false
+
+    if (Array.isArray(data.recipes)) {
+      const merged = mergeLists(localRecipes, data.recipes)
+      if (JSON.stringify(merged) !== JSON.stringify(localRecipes)) {
+        saveLocal(merged)
+        changed = true
+      }
     }
+
+    const incomingCats = data.categories
+    if (incomingCats && Array.isArray(incomingCats.list)) {
+      if ((incomingCats.updatedAt || 0) > (localCats.updatedAt || 0) &&
+          JSON.stringify(incomingCats.list) !== JSON.stringify(localCats.list)) {
+        saveCatsLocal(incomingCats)
+        changed = true
+      }
+    }
+
+    if (changed) emit()
   } catch {
     /* offline or store not configured — stay local-only */
   }
