@@ -103,10 +103,9 @@ export default function AddRecipe({ onAdd, apiKey, onCreateManual, onDone }) {
         author: '',
         thumbnail,
         videoUrl: '',
-        tags: ['셀프'],
+        tags: [],
         favorite: false,
         createdAt: Date.now(),
-        isSelf: true,
         sourceType: '이미지',
       }
       const updated = saveRecipe(newRecipe)
