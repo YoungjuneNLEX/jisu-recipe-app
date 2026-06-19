@@ -1,9 +1,6 @@
 import styles from './RecipeCard.module.css'
-import { splitIngredients } from '../utils/recipe'
 
 export default function RecipeCard({ recipe, onOpen, onDelete, onToggleFavorite }) {
-  const { main: mainIngredients } = splitIngredients(recipe.ingredients)
-
   return (
     <div className={styles.card}>
       <div className={styles.header} onClick={() => onOpen(recipe.id)}>
@@ -25,17 +22,6 @@ export default function RecipeCard({ recipe, onOpen, onDelete, onToggleFavorite 
               >{recipe.favorite ? '★' : '☆'}</button>
               <button className={styles.deleteBtn} onClick={() => onDelete(recipe.id)}>✕</button>
             </div>
-          </div>
-
-          <div className={styles.metaRow}>
-            {recipe.servings && <span className={styles.metaChip}>🍽 {recipe.servings}</span>}
-            {recipe.time && <span className={styles.metaChip}>⏱ {recipe.time}</span>}
-            {mainIngredients.length > 0 && (
-              <span className={styles.metaChip}>🥕 재료 {mainIngredients.length}가지</span>
-            )}
-            {recipe.sourceType && (
-              <span className={`${styles.metaChip} ${styles.aiChip}`}>✦ AI 분석</span>
-            )}
           </div>
 
           {recipe.tags?.length > 0 && (
