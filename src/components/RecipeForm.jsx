@@ -67,12 +67,18 @@ function ListEditor({ items, setItems, placeholder, multiline }) {
   )
 }
 
-export default function RecipeForm({ recipe, onSave, onClose, apiKey, categories = [], onAddCategory }) {
+export default function RecipeForm({
+  recipe, onSave, onClose, apiKey,
+  categories = [], onAddCategory, onRenameCategory, onDeleteCategory,
+}) {
   const isEdit = !!recipe
   const [title, setTitle] = useState(recipe?.title || '')
   const [category, setCategory] = useState(recipe?.category || '')
   const [addingCat, setAddingCat] = useState(false)
   const [newCat, setNewCat] = useState('')
+  const [manageCat, setManageCat] = useState(false)
+  const [renamingCat, setRenamingCat] = useState(null)
+  const [renameDraft, setRenameDraft] = useState('')
   const [thumbnail, setThumbnail] = useState(recipe?.thumbnail || '')
   const [ingredients, setIngredients] = useState(
     recipe?.ingredients?.length ? recipe.ingredients : ['']
@@ -141,6 +147,22 @@ export default function RecipeForm({ recipe, onSave, onClose, apiKey, categories
     }
     setNewCat('')
     setAddingCat(false)
+  }
+
+  function submitRenameCategory(e) {
+    e.preventDefault()
+    const next = renameDraft.trim()
+    if (next && next !== renamingCat) {
+      onRenameCategory?.(renamingCat, next)
+      if (category === renamingCat) setCategory(next)
+    }
+    setRenamingCat(null)
+    setRenameDraft('')
+  }
+
+  function handleDeleteCat(name) {
+    onDeleteCategory?.(name)
+    if (category === name) setCategory('')
   }
 
   function handleSave() {
@@ -235,36 +257,92 @@ export default function RecipeForm({ recipe, onSave, onClose, apiKey, categories
 
         {/* Category */}
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>📁 카테고리</h2>
-          <div className={styles.catPicker}>
-            <button
-              type="button"
-              className={`${styles.catChip} ${!category ? styles.catChipActive : ''}`}
-              onClick={() => setCategory('')}
-            >미분류</button>
-            {categories.map(c => (
+          <div className={styles.sectionHeadRow}>
+            <h2 className={styles.sectionTitle}>📁 카테고리</h2>
+            {categories.length > 0 && (
               <button
                 type="button"
-                key={c}
-                className={`${styles.catChip} ${category === c ? styles.catChipActive : ''}`}
-                onClick={() => setCategory(c)}
-              >{c}</button>
-            ))}
-            {addingCat ? (
-              <form onSubmit={handleCreateCategory} style={{ display: 'inline' }}>
-                <input
-                  autoFocus
-                  className={styles.catInput}
-                  value={newCat}
-                  placeholder="새 카테고리"
-                  onChange={e => setNewCat(e.target.value)}
-                  onBlur={() => { setNewCat(''); setAddingCat(false) }}
-                />
-              </form>
-            ) : (
-              <button type="button" className={styles.catAdd} onClick={() => setAddingCat(true)}>+ 새 카테고리</button>
+                className={styles.manageBtn}
+                onClick={() => { setManageCat(m => !m); setRenamingCat(null) }}
+              >{manageCat ? '완료' : '편집'}</button>
             )}
           </div>
+
+          {manageCat ? (
+            <div className={styles.catManage}>
+              {categories.map(c => (
+                renamingCat === c ? (
+                  <form key={c} onSubmit={submitRenameCategory} className={styles.catManageRow}>
+                    <input
+                      autoFocus
+                      className={styles.catInput}
+                      value={renameDraft}
+                      onChange={e => setRenameDraft(e.target.value)}
+                      onBlur={() => setRenamingCat(null)}
+                    />
+                  </form>
+                ) : (
+                  <div key={c} className={styles.catManageRow}>
+                    <span className={styles.catManageName}>{c}</span>
+                    <button
+                      type="button"
+                      className={styles.catManageEdit}
+                      onClick={() => { setRenamingCat(c); setRenameDraft(c) }}
+                    >✎ 이름변경</button>
+                    <button
+                      type="button"
+                      className={styles.catManageDelete}
+                      onClick={() => handleDeleteCat(c)}
+                    >🗑 삭제</button>
+                  </div>
+                )
+              ))}
+              {addingCat ? (
+                <form onSubmit={handleCreateCategory} className={styles.catManageRow}>
+                  <input
+                    autoFocus
+                    className={styles.catInput}
+                    value={newCat}
+                    placeholder="새 카테고리"
+                    onChange={e => setNewCat(e.target.value)}
+                    onBlur={() => { setNewCat(''); setAddingCat(false) }}
+                  />
+                </form>
+              ) : (
+                <button type="button" className={styles.catAdd} onClick={() => setAddingCat(true)}>+ 새 카테고리</button>
+              )}
+            </div>
+          ) : (
+            <div className={styles.catPicker}>
+              <button
+                type="button"
+                className={`${styles.catChip} ${!category ? styles.catChipActive : ''}`}
+                onClick={() => setCategory('')}
+              >미분류</button>
+              {categories.map(c => (
+                <button
+                  type="button"
+                  key={c}
+                  className={`${styles.catChip} ${category === c ? styles.catChipActive : ''}`}
+                  onClick={() => setCategory(c)}
+                >{c}</button>
+              ))}
+              {addingCat ? (
+                <form onSubmit={handleCreateCategory} style={{ display: 'inline' }}>
+                  <input
+                    autoFocus
+                    className={styles.catInput}
+                    value={newCat}
+                    placeholder="새 카테고리"
+                    onChange={e => setNewCat(e.target.value)}
+                    onBlur={() => { setNewCat(''); setAddingCat(false) }}
+                  />
+                </form>
+              ) : (
+                <button type="button" className={styles.catAdd} onClick={() => setAddingCat(true)}>+ 새 카테고리</button>
+              )}
+            </div>
+          )}
         </section>
 
         {/* Ingredients */}

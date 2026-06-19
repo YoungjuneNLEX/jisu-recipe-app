@@ -127,6 +127,8 @@ export default function App() {
         apiKey={API_KEY}
         categories={categories}
         onAddCategory={handleAddCategory}
+        onRenameCategory={handleRenameCategory}
+        onDeleteCategory={handleDeleteCategory}
       />
     )
   }
@@ -142,6 +144,8 @@ export default function App() {
           apiKey={API_KEY}
           categories={categories}
           onAddCategory={handleAddCategory}
+          onRenameCategory={handleRenameCategory}
+          onDeleteCategory={handleDeleteCategory}
         />
       )
     }
