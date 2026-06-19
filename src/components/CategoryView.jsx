@@ -22,8 +22,9 @@ function Folder({ name, items, cardProps, special, onRename, onDelete }) {
   const [draft, setDraft] = useState(name)
   const color = categoryColor(special ? UNCATEGORIZED : name)
 
-  function submitRename(e) {
-    e.preventDefault()
+  // Commit on Enter AND on blur (mobile keyboards blur before submit fires)
+  function commitRename() {
+    if (!editing) return
     const next = draft.trim()
     if (next && next !== name) onRename(name, next)
     setEditing(false)
@@ -33,13 +34,13 @@ function Folder({ name, items, cardProps, special, onRename, onDelete }) {
     <div className={styles.folder} style={{ borderColor: color.bg }}>
       <div className={styles.folderHead} style={{ background: color.bg }}>
         {editing ? (
-          <form onSubmit={submitRename} className={styles.renameForm}>
+          <form onSubmit={e => { e.preventDefault(); commitRename() }} className={styles.renameForm}>
             <input
               autoFocus
               className={styles.renameInput}
               value={draft}
               onChange={e => setDraft(e.target.value)}
-              onBlur={() => setEditing(false)}
+              onBlur={commitRename}
             />
           </form>
         ) : (
