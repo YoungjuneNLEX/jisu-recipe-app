@@ -3,6 +3,7 @@
     { "source": "/api/youtube/(.*)", "destination": "/api/youtube/$1" },
     { "source": "/api/ytimg/(.*)",   "destination": "/api/ytimg/$1" },
     { "source": "/api/instagram/embed", "destination": "/api/instagram/embed" },
-    { "source": "/api/instagram/media", "destination": "/api/instagram/media" }
+    { "source": "/api/instagram/media", "destination": "/api/instagram/media" },
+    { "source": "/api/instagram/scrape", "destination": "/api/instagram/scrape" }
   ]
 }
