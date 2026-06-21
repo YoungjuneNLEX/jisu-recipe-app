@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { extractVideoId, fetchVideoInfo } from '../utils/youtube'
+import { isInstagramUrl, extractInstagramId, fetchInstagramPostInfo, extractInstagramRecipeWithClaude } from '../utils/instagram'
 import { parseFromDescription } from '../utils/parseRecipe'
 import { saveRecipe } from '../utils/storage'
 import styles from './AddRecipe.module.css'
@@ -14,14 +15,25 @@ export default function AddRecipe({ onAdd, apiKey, onCreateManual, onDone }) {
     const trimmed = url.trim()
     if (!trimmed) return
 
-    const videoId = extractVideoId(trimmed)
-    if (!videoId) {
-      setStatus('error')
-      setMessage('올바른 유튜브 링크를 입력해 주세요')
+    setStatus('loading')
+
+    if (isInstagramUrl(trimmed)) {
+      try {
+        await handleInstagram(trimmed)
+      } catch (err) {
+        setStatus('error')
+        setMessage(err.message || '오류가 발생했어요')
+      }
       return
     }
 
-    setStatus('loading')
+    const videoId = extractVideoId(trimmed)
+    if (!videoId) {
+      setStatus('error')
+      setMessage('올바른 유튜브 또는 인스타그램 링크를 입력해 주세요')
+      return
+    }
+
     setMessage('영상 정보를 가져오는 중...')
 
     try {
@@ -126,7 +138,7 @@ export default function AddRecipe({ onAdd, apiKey, onCreateManual, onDone }) {
         <input
           className={styles.input}
           type="url"
-          placeholder="유튜브 링크를 붙여넣어 주세요 🔗"
+          placeholder="유튜브 또는 인스타그램 링크 🔗"
           value={url}
           onChange={e => setUrl(e.target.value)}
           disabled={status === 'loading'}
@@ -161,6 +173,47 @@ export default function AddRecipe({ onAdd, apiKey, onCreateManual, onDone }) {
    </div>
   )
 }
+
+async function handleInstagram(trimmed) {
+    const postId = extractInstagramId(trimmed)
+    if (!postId) {
+      setStatus('error')
+      setMessage('올바른 인스타그램 링크를 입력해 주세요')
+      return
+    }
+
+    setMessage('인스타그램 정보를 가져오는 중...')
+    const info = await fetchInstagramPostInfo(postId)
+
+    let recipe = { ingredients: [], sauce: [], steps: [], note: '재료와 조리 순서를 직접 입력해 주세요 ✏️' }
+    if (apiKey) {
+      try {
+        recipe = await extractInstagramRecipeWithClaude(trimmed, apiKey, setMessage) || recipe
+      } catch (err) {
+        console.warn('Instagram Claude 추출 실패:', err.message)
+      }
+    }
+
+    const newRecipe = {
+      ...recipe,
+      id: `ig_${postId}`,
+      title: info.title,
+      author: info.author,
+      thumbnail: info.thumbnail,
+      videoUrl: trimmed,
+      sourceType: 'instagram',
+      tags: [],
+      favorite: false,
+      createdAt: Date.now(),
+    }
+
+    const updated = saveRecipe(newRecipe)
+    onAdd(updated)
+    setUrl('')
+    setStatus('success')
+    setMessage(`"${info.title}" 저장됐어요!`)
+    setTimeout(() => { setStatus(null); onDone?.() }, 1200)
+  }
 
 // Thumbnail fallback base64 helper
 async function fetchThumbnailBase64(url) {
