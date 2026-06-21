@@ -94,24 +94,29 @@ async function extractVideoFrames(videoUrl, intervalSecs = 0.5, maxFrames = 40) 
 export async function fetchInstagramPostInfo(postId) {
   try {
     const data = await fetchMediaData(postId)
-    const caption = extractCaption(data)
-    const titleMatch = (caption || '').match(/^[^\n]{4,60}/)
-    const title = titleMatch ? titleMatch[0].trim() : '인스타그램 레시피'
-    const author = data.owner?.username || data.owner?.full_name || ''
-    const thumbnail = data.display_url || data.thumbnail_src || null
-    return { title, author, thumbnail, caption }
+    return parseMediaInfo(data)
   } catch {
     return { title: '인스타그램 레시피', author: '', thumbnail: null, caption: '' }
   }
 }
 
-// ── 메인 레시피 추출 파이프라인 ───────────────────────────────────────────────
+function parseMediaInfo(data) {
+  const caption = extractCaption(data)
+  const titleMatch = (caption || '').match(/^[^\n]{4,60}/)
+  const title = titleMatch ? titleMatch[0].trim() : '인스타그램 레시피'
+  const author = data.owner?.username || data.owner?.full_name || ''
+  const thumbnail = data.display_url || data.thumbnail_src || null
+  return { title, author, thumbnail, caption }
+}
 
-export async function extractInstagramRecipe(postUrl, apiKey, setMessage) {
+// ── 메인 레시피 추출 파이프라인 ───────────────────────────────────────────────
+// API 호출 1회로 info + recipe 모두 반환
+
+export async function extractInstagramData(postUrl, apiKey, setMessage) {
   const postId = extractInstagramId(postUrl)
   if (!postId) throw new Error('올바른 인스타그램 링크를 입력해 주세요')
 
-  // 1. RapidAPI로 게시물 데이터 가져오기
+  // 1. RapidAPI로 게시물 데이터 가져오기 (단 1회)
   setMessage('인스타그램 게시물 정보를 가져오는 중...')
   let mediaData = null
   try {
@@ -121,6 +126,19 @@ export async function extractInstagramRecipe(postUrl, apiKey, setMessage) {
     throw new Error('인스타그램 게시물을 가져올 수 없어요. 잠시 후 다시 시도해 주세요.')
   }
 
+  const info = parseMediaInfo(mediaData)
+  const recipe = await extractRecipeFromMedia(mediaData, apiKey, setMessage)
+
+  return { info, recipe }
+}
+
+// 하위 호환용 (기존 코드에서 호출하는 경우)
+export async function extractInstagramRecipe(postUrl, apiKey, setMessage) {
+  const { recipe } = await extractInstagramData(postUrl, apiKey, setMessage)
+  return recipe
+}
+
+async function extractRecipeFromMedia(mediaData, apiKey, setMessage) {
   const caption = extractCaption(mediaData)
   const thumbnailUrl = mediaData.display_url || mediaData.thumbnail_src || null
   const videoUrl = mediaData.is_video ? mediaData.video_url : null

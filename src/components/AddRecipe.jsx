@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { extractVideoId, fetchVideoInfo } from '../utils/youtube'
-import { isInstagramUrl, extractInstagramId, fetchInstagramPostInfo, extractInstagramRecipe } from '../utils/instagram'
+import { isInstagramUrl, extractInstagramId, extractInstagramData } from '../utils/instagram'
 import { parseFromDescription, cleanSteps } from '../utils/parseRecipe'
 import { saveRecipe } from '../utils/storage'
 import styles from './AddRecipe.module.css'
@@ -139,19 +139,18 @@ export default function AddRecipe({ onAdd, apiKey, onCreateManual, onDone }) {
       return
     }
 
-    const infoPromise = fetchInstagramPostInfo(postId)
-
+    let info = { title: '인스타그램 레시피', author: '', thumbnail: null, caption: '' }
     let recipe = null
-    if (apiKey) {
-      try {
-        recipe = await extractInstagramRecipe(trimmed, apiKey, setMessage)
-      } catch (err) {
-        console.warn('Instagram 추출 실패:', err.message)
-        setMessage(err.message)
-      }
+
+    try {
+      const result = await extractInstagramData(trimmed, apiKey, setMessage)
+      info = result.info
+      recipe = result.recipe
+    } catch (err) {
+      console.warn('Instagram 추출 실패:', err.message)
+      setMessage(err.message)
     }
 
-    const info = await infoPromise
     const title = recipe?.title || info.title || '인스타그램 레시피'
     if (recipe) delete recipe.title
 
