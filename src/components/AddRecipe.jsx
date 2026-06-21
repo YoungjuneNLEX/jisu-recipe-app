@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { extractVideoId, fetchVideoInfo } from '../utils/youtube'
-import { isInstagramUrl, extractInstagramId, fetchInstagramPostInfo, extractInstagramRecipeWithClaude } from '../utils/instagram'
+import { isInstagramUrl, extractInstagramId, fetchInstagramPostInfo, extractInstagramRecipe } from '../utils/instagram'
 import { parseFromDescription } from '../utils/parseRecipe'
 import { saveRecipe } from '../utils/storage'
 import styles from './AddRecipe.module.css'
@@ -182,22 +182,31 @@ async function handleInstagram(trimmed) {
       return
     }
 
-    setMessage('인스타그램 정보를 가져오는 중...')
-    const info = await fetchInstagramPostInfo(postId)
+    // Fetch post info (title, author, thumbnail) in parallel with recipe extraction
+    const infoPromise = fetchInstagramPostInfo(postId)
 
-    let recipe = { ingredients: [], sauce: [], steps: [], note: '재료와 조리 순서를 직접 입력해 주세요 ✏️' }
+    let recipe = null
     if (apiKey) {
       try {
-        recipe = await extractInstagramRecipeWithClaude(trimmed, apiKey, setMessage) || recipe
+        recipe = await extractInstagramRecipe(trimmed, apiKey, setMessage)
       } catch (err) {
-        console.warn('Instagram Claude 추출 실패:', err.message)
+        console.warn('Instagram 추출 실패:', err.message)
+        setMessage(err.message)
       }
     }
 
+    const info = await infoPromise
+
+    // Use title from Claude if available, otherwise from page info
+    const title = recipe?.title || info.title || '인스타그램 레시피'
+    if (recipe) delete recipe.title
+
     const newRecipe = {
+      ingredients: [], sauce: [], steps: [],
+      note: '재료와 조리 순서를 직접 입력해 주세요 ✏️',
       ...recipe,
       id: `ig_${postId}`,
-      title: info.title,
+      title,
       author: info.author,
       thumbnail: info.thumbnail,
       videoUrl: trimmed,
@@ -211,7 +220,7 @@ async function handleInstagram(trimmed) {
     onAdd(updated)
     setUrl('')
     setStatus('success')
-    setMessage(`"${info.title}" 저장됐어요!`)
+    setMessage(`"${title}" 저장됐어요!`)
     setTimeout(() => { setStatus(null); onDone?.() }, 1200)
   }
 
