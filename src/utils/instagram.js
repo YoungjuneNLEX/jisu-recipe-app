@@ -1,3 +1,5 @@
+import { cleanSteps } from './parseRecipe'
+
 export function isInstagramUrl(url) {
   return /instagram\.com\/(p|reel|reels)\//.test(url)
 }
@@ -234,6 +236,7 @@ ${hasImages ? `위 이미지${videoUrl ? '들은 영상에서 0.5초 단위로 �
   if (!jsonMatch) return null
 
   const parsed = JSON.parse(jsonMatch[0])
+  if (parsed.steps) parsed.steps = cleanSteps(parsed.steps)
   parsed.sourceType = 'instagram'
   return parsed
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { extractVideoId, fetchVideoInfo } from '../utils/youtube'
 import { isInstagramUrl, extractInstagramId, fetchInstagramPostInfo, extractInstagramRecipe } from '../utils/instagram'
-import { parseFromDescription } from '../utils/parseRecipe'
+import { parseFromDescription, cleanSteps } from '../utils/parseRecipe'
 import { saveRecipe } from '../utils/storage'
 import styles from './AddRecipe.module.css'
 
@@ -360,6 +360,7 @@ ${textContent ? `\n아래 텍스트 데이터도 참고하세요:\n${textContent
   const parsed = JSON.parse(jsonMatch[0])
   if (!parsed || (!parsed.ingredients?.length && !parsed.steps?.length)) return null
 
+  if (parsed.steps) parsed.steps = cleanSteps(parsed.steps)
   parsed.sourceType = [
     hasFrames && '영상',
     hasTranscript && '자막',

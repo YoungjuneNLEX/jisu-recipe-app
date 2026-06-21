@@ -1,3 +1,13 @@
+// "1단계:", "2단계 -", "Step 1:" 같은 앞부분 제거
+export function cleanSteps(steps = []) {
+  return steps.map(s =>
+    s.replace(/^\d+\s*단계\s*[:.\-–]?\s*/i, '')
+     .replace(/^step\s*\d+\s*[:.\-–]?\s*/i, '')
+     .replace(/^\d+\.\s*\d+\s*단계\s*[:.\-–]?\s*/i, '')
+     .trim()
+  ).filter(Boolean)
+}
+
 /**
  * Parse recipe from YouTube description text.
  * Returns { ingredients, steps, servings, time } or null if not enough data.
