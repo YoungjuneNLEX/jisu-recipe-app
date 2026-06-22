@@ -230,9 +230,9 @@ export default function RecipeForm({
             />
           </label>
           <button type="button" className={styles.aiBtn} onClick={openAiModal}>
-            {thumbnail ? '✨ AI 이미지 수정 / 재생성' : '✨ AI 추천 이미지 만들기'}
+            {thumbnail ? '✨ 동동이 이미지 수정 / 재생성' : '✨ 동동이가 이미지 만들기'}
           </button>
-          <p className={styles.aiHint}>레시피 내용을 보고 귀여운 파스텔 그림을 그려줘요</p>
+          <p className={styles.aiHint}>동동이가 레시피 내용을 보고 귀여운 파스텔 그림을 그려줘요</p>
 
           {thumbnail && (
             <div className={styles.mediaActions}>

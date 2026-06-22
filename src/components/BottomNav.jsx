@@ -1,6 +1,5 @@
 import styles from './BottomNav.module.css'
 
-// Cute, rounded line icons (monochrome — colour comes from currentColor)
 function HomeIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"
@@ -30,7 +29,7 @@ function PlusIcon() {
   )
 }
 
-export default function BottomNav({ active, onHome, onCategories, onAdd }) {
+export default function BottomNav({ active, onHome, onCategories, onDongDong, onAdd }) {
   return (
     <nav className={styles.nav}>
       <div className={styles.inner}>
@@ -43,10 +42,6 @@ export default function BottomNav({ active, onHome, onCategories, onAdd }) {
           <span className={styles.label}>홈</span>
         </button>
 
-        <button className={styles.fab} onClick={onAdd} aria-label="레시피 추가">
-          <PlusIcon />
-        </button>
-
         <button
           className={`${styles.tab} ${active === 'categories' ? styles.tabActive : ''}`}
           onClick={onCategories}
@@ -54,6 +49,19 @@ export default function BottomNav({ active, onHome, onCategories, onAdd }) {
         >
           <FolderIcon />
           <span className={styles.label}>카테고리</span>
+        </button>
+
+        <button className={styles.fab} onClick={onAdd} aria-label="레시피 추가">
+          <PlusIcon />
+        </button>
+
+        <button
+          className={`${styles.tab} ${active === 'dongdong' ? styles.tabActiveDongdong : ''}`}
+          onClick={onDongDong}
+          aria-label="동동이"
+        >
+          <span className={styles.dongdongIcon}>🐾</span>
+          <span className={styles.label}>동동이</span>
         </button>
       </div>
     </nav>

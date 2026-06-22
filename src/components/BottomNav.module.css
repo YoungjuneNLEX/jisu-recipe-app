@@ -45,6 +45,14 @@
 
 .tabActive { color: var(--text-primary); }
 
+.tabActiveDongdong { color: var(--accent); }
+
+.dongdongIcon {
+  font-size: 22px;
+  line-height: 1;
+  display: block;
+}
+
 /* Center floating action button */
 .fab {
   flex-shrink: 0;

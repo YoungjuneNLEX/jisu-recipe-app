@@ -433,47 +433,64 @@
 .removeBtn { color: var(--text-secondary); }
 .removeBtn:hover { color: #c62828; border-color: #c62828; }
 
-.bottomSpace { height: calc(var(--safe-bottom) + 40px); }
+.bottomSpace { height: calc(var(--safe-bottom) + 80px); }
 
-/* ── Floating side navigation ── */
+/* ── Bottom section toolbar ── */
 .sideNav {
   position: fixed;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 110;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding-bottom: var(--safe-bottom);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .navItem {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  width: 48px;
-  padding: 8px 0;
+  gap: 3px;
+  padding: 10px 0;
   border: none;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: var(--shadow-sm);
+  border-radius: 0;
+  background: none;
   color: var(--text-muted);
-  transition: all 0.18s;
+  transition: color 0.15s, background 0.15s;
+  position: relative;
 }
 
-.navIcon { font-size: 17px; line-height: 1; }
+.navItem::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.navIcon { font-size: 18px; line-height: 1; }
 
 .navLabel {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 .navActive {
-  background: rgba(26,26,26,0.88);
-  color: #fff;
-  transform: scale(1.06);
+  color: var(--text-primary);
+  background: none;
+  transform: none;
+}
+
+.navActive::after {
+  background: var(--accent);
 }
