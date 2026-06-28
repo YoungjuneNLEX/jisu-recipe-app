@@ -6,6 +6,7 @@ import RecipeForm from './components/RecipeForm'
 import HomeView from './components/HomeView'
 import CategoryView from './components/CategoryView'
 import DongDongView from './components/DongDongView'
+import DessertView from './components/DessertView'
 import BottomNav from './components/BottomNav'
 import {
   getRecipes, deleteRecipe, toggleFavorite, saveRecipe, syncCloud, onRecipesChange,
@@ -21,6 +22,7 @@ function parseRoute(hash) {
   if (h === '#/new') return { view: 'new' }
   if (h === '#/categories') return { view: 'categories' }
   if (h === '#/dongdong') return { view: 'dongdong' }
+  if (h === '#/dessert') return { view: 'dessert' }
   const edit = h.match(/^#\/recipe\/(.+)\/edit$/)
   if (edit) return { view: 'edit', id: decodeURIComponent(edit[1]) }
   const detail = h.match(/^#\/recipe\/(.+)$/)
@@ -83,6 +85,7 @@ export default function App() {
   const goHome = () => navReplace('#/')
   const goCategories = () => navReplace('#/categories')
   const goDongDong = () => navReplace('#/dongdong')
+  const goDessert = () => navReplace('#/dessert')
   const openRecipe = id => navPush(`#/recipe/${encodeURIComponent(id)}`)
   const openEditRecipe = id => navPush(`#/recipe/${encodeURIComponent(id)}/edit`)
   const openNewRecipe = () => { setShowAdd(false); navPush('#/new') }
@@ -172,7 +175,7 @@ export default function App() {
   }
 
   // ── Tabbed main views (home / categories / dongdong) with bottom nav ──
-  const view = route.view === 'categories' ? 'categories' : route.view === 'dongdong' ? 'dongdong' : 'home'
+  const view = ['categories', 'dongdong', 'dessert'].includes(route.view) ? route.view : 'home'
   const cardProps = {
     onOpen: openRecipe,
     onDelete: handleDelete,
@@ -199,23 +202,28 @@ export default function App() {
               레시피
             </h1>
             <p className={styles.subtitle}>
-              {view === 'categories' ? '카테고리별로 모아보기' : view === 'dongdong' ? '동동이한테 물어봐!' : '나만의 레시피 보관함'}
+              {view === 'categories' ? '카테고리별로 모아보기'
+                : view === 'dongdong' ? '동동이한테 물어봐!'
+                : view === 'dessert' ? '내 주변 카페·디저트 추천'
+                : '나만의 레시피 보관함'}
             </p>
           </div>
         </div>
-        <div className={styles.searchBar}>
-          <span className={styles.searchIcon}>🔍</span>
-          <input
-            className={styles.search}
-            type="search"
-            placeholder="레시피, 재료, 태그 검색..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          {search && (
-            <button className={styles.searchClear} onClick={() => setSearch('')} aria-label="검색 지우기">✕</button>
-          )}
-        </div>
+        {view !== 'dessert' && (
+          <div className={styles.searchBar}>
+            <span className={styles.searchIcon}>🔍</span>
+            <input
+              className={styles.search}
+              type="search"
+              placeholder="레시피, 재료, 태그 검색..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button className={styles.searchClear} onClick={() => setSearch('')} aria-label="검색 지우기">✕</button>
+            )}
+          </div>
+        )}
       </header>
 
       <main className={styles.main}>
@@ -245,6 +253,8 @@ export default function App() {
             )
             : view === 'dongdong'
             ? <DongDongView recipes={recipes} apiKey={API_KEY} />
+            : view === 'dessert'
+            ? <DessertView apiKey={API_KEY} />
             : <HomeView recipes={recipes} {...cardProps} />}
       </main>
 
@@ -253,6 +263,7 @@ export default function App() {
         onHome={goHome}
         onCategories={goCategories}
         onDongDong={goDongDong}
+        onDessert={goDessert}
         onAdd={() => setShowAdd(true)}
       />
 

@@ -29,7 +29,18 @@ function PlusIcon() {
   )
 }
 
-export default function BottomNav({ active, onHome, onCategories, onDongDong, onAdd }) {
+function CoffeeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4.5 8.5h12v5a4.5 4.5 0 0 1-4.5 4.5H9a4.5 4.5 0 0 1-4.5-4.5v-5Z" />
+      <path d="M16.5 9.5h2a2.2 2.2 0 0 1 0 4.4h-2" />
+      <path d="M8 2.8c-.5.7-.5 1.3 0 2M11.5 2.8c-.5.7-.5 1.3 0 2" />
+    </svg>
+  )
+}
+
+export default function BottomNav({ active, onHome, onCategories, onDongDong, onDessert, onAdd }) {
   return (
     <nav className={styles.nav}>
       <div className={styles.inner}>
@@ -62,6 +73,15 @@ export default function BottomNav({ active, onHome, onCategories, onDongDong, on
         >
           <span className={styles.dongdongIcon}>🐾</span>
           <span className={styles.label}>동동이</span>
+        </button>
+
+        <button
+          className={`${styles.tab} ${active === 'dessert' ? styles.tabActive : ''}`}
+          onClick={onDessert}
+          aria-label="디저트"
+        >
+          <CoffeeIcon />
+          <span className={styles.label}>디저트</span>
         </button>
       </div>
     </nav>
