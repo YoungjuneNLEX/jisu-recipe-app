@@ -194,7 +194,10 @@ export default function App() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.logoArea}>
-            <h1 className={styles.logo}>📖 레시피</h1>
+            <h1 className={styles.logo}>
+              <img className={styles.logoIcon} src="/icon.svg" alt="" aria-hidden="true" />
+              레시피
+            </h1>
             <p className={styles.subtitle}>
               {view === 'categories' ? '카테고리별로 모아보기' : view === 'dongdong' ? '동동이한테 물어봐!' : '나만의 레시피 보관함'}
             </p>

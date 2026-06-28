@@ -27,10 +27,21 @@
 .logoArea {}
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-size: 18px;
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -0.02em;
+}
+
+.logoIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .subtitle {
