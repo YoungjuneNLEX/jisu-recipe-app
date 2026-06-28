@@ -79,39 +79,49 @@ export function naverMapUrl(name, address, fallbackCity) {
   return `https://map.naver.com/v5/search/${encodeURIComponent(query)}`
 }
 
-const SYSTEM_PROMPT = `너는 한국의 카페·디저트 큐레이터야. 반드시 web_search 도구로 최신 정보를 직접 검색해서 답해.
+// Per-theme spec. Each theme is searched in its own (parallel) request so the
+// two lists arrive independently and the wall-clock time is the slower of the
+// two rather than the sum.
+const THEME_SPEC = {
+  coffee: {
+    label: '커피 맛집(원두/에스프레소 퀄리티 위주)',
+    desc: '에스프레소/원두(빈) 퀄리티가 특히 뛰어난 곳. 스페셜티 커피, 로스터리, 싱글오리진 등 커피 자체의 맛으로 유명한 곳 위주.',
+    extraField: '   - beans: 원두/로스팅 특징 (예: "싱글오리진 핸드드립", "직접 로스팅한 다크로스트")',
+    schema: '{ "name": "", "address": "", "reason": "", "review": "", "signature": "", "beans": "" }',
+  },
+  dessert: {
+    label: '디저트 카페',
+    desc: '디저트(케이크, 베이커리, 구움과자 등)가 맛있는 디저트 카페.',
+    extraField: '',
+    schema: '{ "name": "", "address": "", "reason": "", "review": "", "signature": "" }',
+  },
+}
+
+function buildSystemPrompt(spec) {
+  return `너는 한국의 카페·디저트 큐레이터야. 반드시 web_search 도구로 최신 정보를 직접 검색해서 답해.
 
 규칙:
-1. 사용자가 알려준 '시' 전역을 기준으로 추천해.
-2. 두 가지 테마로 나눠서 각각 정확히 5곳(TOP 5)을 추천해:
-   - coffee: 에스프레소/원두(빈) 퀄리티가 특히 뛰어난 곳. 스페셜티 커피, 로스터리, 싱글오리진 등 커피 자체의 맛으로 유명한 곳 위주.
-   - dessert: 디저트(케이크, 베이커리, 구움과자 등)가 맛있는 디저트 카페.
-3. 매우 중요: web_search로 각 가게가 "현재 영업 중"인지 반드시 확인해. 폐업/폐점/영구 휴업한 곳은 검색 평판이 아무리 좋아도 절대 추천하지 마. 영업 여부가 확실하지 않으면 그 곳은 빼고 다른 영업 중인 곳을 넣어.
-4. 각 항목에 들어갈 필드:
-   - name: 정확한 상호명 (네이버 지도에 등록된 이름 그대로. 지점명이 있으면 포함)
-   - address: 도로명 주소만 적어. 괄호 안 설명이나 "확인 권장" 같은 안내 문구는 절대 넣지 마. 정확한 번지를 모르면 시/구/동까지만 적어.
+1. 사용자가 알려준 '시' 전역을 기준으로 "${spec.label}" 테마로 정확히 5곳(TOP 5)을 추천해.
+   - 대상: ${spec.desc}
+2. 매우 중요: web_search로 각 가게가 "현재 영업 중"인지 확인해. 폐업/폐점/영구 휴업한 곳은 평판이 아무리 좋아도 절대 추천하지 마. 영업 여부가 불확실하면 빼고 다른 영업 중인 곳을 넣어.
+3. 각 항목 필드:
+   - name: 정확한 상호명 (네이버 지도에 등록된 이름 그대로, 지점명 포함)
+   - address: 도로명 주소만. 괄호 설명이나 "확인 권장" 같은 안내 문구 금지. 번지를 모르면 시/구/동까지만.
    - reason: 추천 이유 (1~2문장)
-   - review: 실제 방문자 리뷰/평가를 요약한 한 문장
+   - review: 실제 방문자 리뷰/평가 요약 한 문장
    - signature: 대표 메뉴 1~2개
-   - coffee 항목은 추가로 beans: 원두/로스팅 특징(예: "싱글오리진 핸드드립", "직접 로스팅한 다크로스트")
-5. 검색으로 실제 존재가 확인된 곳만 넣어. 지어내지 마. 5곳을 못 채우면 채운 만큼만. 네이버 지도/카카오맵 같은 한국 지도 서비스에 실제로 등록되어 있고 상호명으로 검색되는 곳이어야 해.
-6. 출력은 다른 설명 없이 아래 형식의 \`\`\`json 코드블록 하나로만 해. 모든 텍스트는 한국어.
+${spec.extraField}
+4. 실제 존재가 확인된 곳만. 지어내지 마. 5곳을 못 채우면 채운 만큼만. 네이버 지도/카카오맵에 실제 등록되어 상호명으로 검색되는 곳이어야 해.
+5. 출력은 설명 없이 아래 형식의 \`\`\`json 코드블록 하나로만. 모든 텍스트는 한국어.
 
 형식:
 \`\`\`json
-{
-  "city": "도시명",
-  "coffee": [
-    { "name": "", "address": "", "reason": "", "review": "", "signature": "", "beans": "" }
-  ],
-  "dessert": [
-    { "name": "", "address": "", "reason": "", "review": "", "signature": "" }
-  ]
-}
+{ "items": [ ${spec.schema} ] }
 \`\`\``
+}
 
-// Extract the first JSON object from a model response (handles ```json fences).
-function parseCafeJson(text) {
+// Extract the items array from a model response (handles ```json fences).
+function parseItems(text) {
   let jsonStr = null
   const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/)
   if (fence) {
@@ -123,18 +133,31 @@ function parseCafeJson(text) {
   }
   if (!jsonStr) throw new Error('추천 결과를 해석하지 못했어요')
   const obj = JSON.parse(jsonStr)
-  return {
-    city: obj.city || null,
-    coffee: Array.isArray(obj.coffee) ? obj.coffee : [],
-    dessert: Array.isArray(obj.dessert) ? obj.dessert : [],
-  }
+  return Array.isArray(obj.items) ? obj.items : []
 }
 
-// Ask Claude (with web search) for currently-operating cafe picks in `city`.
-export async function recommendCafes({ apiKey, city, signal }) {
-  if (!apiKey) throw new Error('API 키가 없어요')
-  const cityName = city || '현재 위치'
+// In-memory cache so re-entering the tab (or switching themes) doesn't trigger
+// a fresh search. Keyed by city + theme; survives component remounts within the
+// session. Pass force=true to bypass.
+const cache = new Map()
+const cacheKey = (city, theme) => `${city || '?'}|${theme}`
 
+export function getCachedCafes(city, theme) {
+  return cache.get(cacheKey(city, theme)) || null
+}
+
+// Ask Claude (with web search) for currently-operating picks for ONE theme.
+export async function recommendCafesByTheme({ apiKey, city, theme, signal, force = false }) {
+  if (!apiKey) throw new Error('API 키가 없어요')
+  const spec = THEME_SPEC[theme]
+  if (!spec) throw new Error('알 수 없는 테마예요')
+
+  if (!force) {
+    const cached = cache.get(cacheKey(city, theme))
+    if (cached) return cached
+  }
+
+  const cityName = city || '현재 위치'
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     signal,
@@ -146,13 +169,13 @@ export async function recommendCafes({ apiKey, city, signal }) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
-      system: SYSTEM_PROMPT,
-      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 8 }],
+      max_tokens: 2000,
+      system: buildSystemPrompt(spec),
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
       messages: [
         {
           role: 'user',
-          content: `${cityName} 전역에서 지금 영업 중인 커피 맛집(원두 퀄리티 위주)과 디저트 카페를 각각 TOP 5로 추천해줘.`,
+          content: `${cityName} 전역에서 지금 영업 중인 ${spec.label} TOP 5를 추천해줘.`,
         },
       ],
     }),
@@ -168,5 +191,7 @@ export async function recommendCafes({ apiKey, city, signal }) {
     .filter(b => b.type === 'text')
     .map(b => b.text)
     .join('\n')
-  return parseCafeJson(text)
+  const items = parseItems(text)
+  cache.set(cacheKey(city, theme), items)
+  return items
 }

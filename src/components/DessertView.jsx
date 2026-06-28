@@ -1,11 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
 import styles from './DessertView.module.css'
-import { getCityLocation, osmEmbedUrl, naverMapUrl, cleanAddress, recommendCafes } from '../utils/cafes'
+import {
+  getCityLocation,
+  osmEmbedUrl,
+  naverMapUrl,
+  cleanAddress,
+  recommendCafesByTheme,
+  getCachedCafes,
+} from '../utils/cafes'
 
 const THEMES = [
   { key: 'coffee', label: '☕ 커피 맛집', hint: '원두·에스프레소 퀄리티' },
   { key: 'dessert', label: '🍰 디저트 카페', hint: '케이크·베이커리' },
 ]
+
+const emptyState = () => ({
+  coffee: { items: null, loading: false, error: null },
+  dessert: { items: null, loading: false, error: null },
+})
 
 function CafeCard({ cafe, rank, city }) {
   const address = cleanAddress(cafe.address)
@@ -47,9 +59,7 @@ function CafeCard({ cafe, rank, city }) {
 export default function DessertView({ apiKey = '' }) {
   const [loc, setLoc] = useState(null)
   const [locErr, setLocErr] = useState(null)
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [res, setRes] = useState(emptyState)
   const [theme, setTheme] = useState('coffee')
 
   useEffect(() => {
@@ -60,29 +70,35 @@ export default function DessertView({ apiKey = '' }) {
     return () => { alive = false }
   }, [])
 
-  const fetchCafes = useCallback(
-    city => {
-      const controller = new AbortController()
-      setLoading(true)
-      setError(null)
-      setData(null)
-      recommendCafes({ apiKey, city, signal: controller.signal })
-        .then(d => setData(d))
-        .catch(e => { if (e.name !== 'AbortError') setError(e.message) })
-        .finally(() => setLoading(false))
-      return controller
+  // Load one theme. Uses the in-memory cache unless force=true.
+  const loadTheme = useCallback(
+    (city, t, force = false) => {
+      const cached = !force && getCachedCafes(city, t)
+      if (cached) {
+        setRes(r => ({ ...r, [t]: { items: cached, loading: false, error: null } }))
+        return
+      }
+      setRes(r => ({ ...r, [t]: { ...r[t], loading: true, error: null } }))
+      recommendCafesByTheme({ apiKey, city, theme: t, force })
+        .then(items => setRes(r => ({ ...r, [t]: { items, loading: false, error: null } })))
+        .catch(e => setRes(r => ({ ...r, [t]: { items: null, loading: false, error: e.message } })))
     },
     [apiKey]
   )
 
+  // Once we know the city, fire BOTH themes in parallel so each list arrives
+  // independently (cached ones resolve instantly).
   useEffect(() => {
     if (!loc) return
-    const controller = fetchCafes(loc.city || loc.full)
-    return () => controller.abort()
-  }, [loc, fetchCafes])
+    const city = loc.city || loc.full
+    loadTheme(city, 'coffee')
+    loadTheme(city, 'dessert')
+  }, [loc, loadTheme])
 
-  const cityLabel = data?.city || loc?.full || loc?.city || null
-  const list = data ? (theme === 'coffee' ? data.coffee : data.dessert) : []
+  const cityLabel = loc?.full || loc?.city || null
+  const cur = res[theme]
+  const list = cur.items || []
+  const city = loc?.city || loc?.full
 
   return (
     <div className={styles.container}>
@@ -113,7 +129,10 @@ export default function DessertView({ apiKey = '' }) {
             className={`${styles.toggleBtn} ${theme === t.key ? styles.toggleActive : ''}`}
             onClick={() => setTheme(t.key)}
           >
-            <span className={styles.toggleLabel}>{t.label}</span>
+            <span className={styles.toggleLabel}>
+              {t.label}
+              {res[t.key].loading && <span className={styles.dot} />}
+            </span>
             <span className={styles.toggleHint}>{t.hint}</span>
           </button>
         ))}
@@ -125,43 +144,38 @@ export default function DessertView({ apiKey = '' }) {
           <div className={styles.notice}>📍 {locErr}</div>
         )}
 
-        {loading && (
+        {cur.loading && (
           <div className={styles.loading}>
             <div className={styles.spinner} />
             <p className={styles.loadingText}>
-              실시간으로 {cityLabel ? `${cityLabel} ` : ''}카페를 검색하고 있어요...
+              실시간으로 {cityLabel ? `${cityLabel} ` : ''}{theme === 'coffee' ? '커피 맛집' : '디저트 카페'}을 검색하고 있어요...
               <br />
-              <span className={styles.loadingSub}>현재 영업 중인 곳만 골라낼게요 (조금 걸려요)</span>
+              <span className={styles.loadingSub}>현재 영업 중인 곳만 골라낼게요</span>
             </p>
           </div>
         )}
 
-        {error && !loading && (
+        {cur.error && !cur.loading && (
           <div className={styles.error}>
-            <p>😢 {error}</p>
-            {loc && (
-              <button className={styles.retryBtn} onClick={() => fetchCafes(loc.city || loc.full)}>
+            <p>😢 {cur.error}</p>
+            {city && (
+              <button className={styles.retryBtn} onClick={() => loadTheme(city, theme, true)}>
                 다시 시도
               </button>
             )}
           </div>
         )}
 
-        {!loading && !error && data && (
+        {!cur.loading && !cur.error && cur.items && (
           <>
             {list.length === 0 ? (
               <div className={styles.notice}>
-                추천할 만한 곳을 찾지 못했어요. 다시 시도해볼까요?
+                추천할 만한 곳을 찾지 못했어요. 새로고침을 해볼까요?
               </div>
             ) : (
               <div className={styles.list}>
                 {list.map((cafe, i) => (
-                  <CafeCard
-                    key={`${cafe.name}-${i}`}
-                    cafe={cafe}
-                    rank={i + 1}
-                    city={loc?.city || data?.city}
-                  />
+                  <CafeCard key={`${cafe.name}-${i}`} cafe={cafe} rank={i + 1} city={city} />
                 ))}
               </div>
             )}
@@ -171,10 +185,10 @@ export default function DessertView({ apiKey = '' }) {
               방문 전 네이버 지도에서 영업시간을 한 번 더 확인해줘요 🙏
             </p>
 
-            {loc && (
+            {city && (
               <button
                 className={styles.refreshBtn}
-                onClick={() => fetchCafes(loc.city || loc.full)}
+                onClick={() => loadTheme(city, theme, true)}
               >
                 🔄 새로고침
               </button>
