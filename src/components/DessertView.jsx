@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import styles from './DessertView.module.css'
-import { getCityLocation, osmEmbedUrl, naverMapUrl, recommendCafes } from '../utils/cafes'
+import { getCityLocation, osmEmbedUrl, naverMapUrl, cleanAddress, recommendCafes } from '../utils/cafes'
 
 const THEMES = [
   { key: 'coffee', label: '☕ 커피 맛집', hint: '원두·에스프레소 퀄리티' },
   { key: 'dessert', label: '🍰 디저트 카페', hint: '케이크·베이커리' },
 ]
 
-function CafeCard({ cafe, rank }) {
-  const query = `${cafe.name} ${cafe.address || ''}`.trim()
+function CafeCard({ cafe, rank, city }) {
+  const address = cleanAddress(cafe.address)
   return (
     <div className={styles.card}>
       <div className={styles.rank}>{rank}</div>
@@ -27,13 +27,13 @@ function CafeCard({ cafe, rank }) {
         {cafe.reason && <p className={styles.reason}>{cafe.reason}</p>}
         {cafe.review && <p className={styles.review}>“{cafe.review}”</p>}
 
-        {cafe.address && (
-          <p className={styles.address}>📍 {cafe.address}</p>
+        {address && (
+          <p className={styles.address}>📍 {address}</p>
         )}
 
         <a
           className={styles.mapLink}
-          href={naverMapUrl(query)}
+          href={naverMapUrl(cafe.name, cafe.address, city)}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -156,7 +156,12 @@ export default function DessertView({ apiKey = '' }) {
             ) : (
               <div className={styles.list}>
                 {list.map((cafe, i) => (
-                  <CafeCard key={`${cafe.name}-${i}`} cafe={cafe} rank={i + 1} />
+                  <CafeCard
+                    key={`${cafe.name}-${i}`}
+                    cafe={cafe}
+                    rank={i + 1}
+                    city={loc?.city || data?.city}
+                  />
                 ))}
               </div>
             )}
