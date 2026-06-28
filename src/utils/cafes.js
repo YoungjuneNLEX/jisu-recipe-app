@@ -52,9 +52,20 @@ export function cleanAddress(address) {
   return address.replace(/\(.*?\)/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
-// Naver Map search link — search by the business name only (no region appended).
+// Strip a trailing branch token (지점명) so the search uses the core brand name.
+// "바이핸커피 어진점" → "바이핸커피", "스타벅스 세종청사점" → "스타벅스",
+// "투썸플레이스(본점)" → "투썸플레이스". A single-token name is left as-is.
+function stripBranch(name) {
+  if (!name) return ''
+  let n = name.replace(/\(.*?\)/g, ' ').trim() // drop (지점명)
+  n = n.replace(/\s+\S*점$/, '').trim() // drop trailing "...점" word
+  return n || name
+}
+
+// Naver Map search link — search by the core business name only
+// (no region appended, branch name stripped).
 export function naverMapUrl(name) {
-  return `https://map.naver.com/v5/search/${encodeURIComponent((name || '').trim())}`
+  return `https://map.naver.com/v5/search/${encodeURIComponent(stripBranch(name))}`
 }
 
 // Per-theme spec. Each theme is searched in its own (parallel) request so the
