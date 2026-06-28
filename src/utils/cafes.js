@@ -45,25 +45,6 @@ export function osmEmbedUrl(lat, lon) {
   return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lon}`
 }
 
-// Trim admin suffixes to a short, searchable region core.
-// "세종특별자치시" → "세종", "서울특별시" → "서울", "성남시" → "성남".
-function shortRegion(city) {
-  if (!city) return ''
-  const core = city.replace(/(특별자치시|특별자치도|특별시|광역시|시|군|도)$/, '').trim()
-  return core || city
-}
-
-// Pull the most specific locality token (동/읍/면/구) from an address string,
-// ignoring any parenthetical notes the model may have added.
-function localityFrom(address) {
-  if (!address) return null
-  const cleaned = address.replace(/\(.*?\)/g, ' ')
-  const tokens = cleaned.match(/[가-힣A-Za-z0-9]+(?:특별자치시|특별시|광역시|시|군|구|동|읍|면)/g)
-  if (!tokens) return null
-  const specific = tokens.filter(t => /(동|읍|면|구)$/.test(t))
-  return specific.length ? specific[specific.length - 1] : tokens[tokens.length - 1]
-}
-
 // Clean an address for display: drop parenthetical notes / disclaimers the
 // model sometimes appends, collapse whitespace.
 export function cleanAddress(address) {
@@ -71,12 +52,9 @@ export function cleanAddress(address) {
   return address.replace(/\(.*?\)/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
-// Naver Map search link. Korean place search works best with
-// "상호명 + 동/구(또는 시)" rather than a full road address — keep it short.
-export function naverMapUrl(name, address, fallbackCity) {
-  const region = localityFrom(address) || shortRegion(fallbackCity) || ''
-  const query = [name, region].filter(Boolean).join(' ').trim()
-  return `https://map.naver.com/v5/search/${encodeURIComponent(query)}`
+// Naver Map search link — search by the business name only (no region appended).
+export function naverMapUrl(name) {
+  return `https://map.naver.com/v5/search/${encodeURIComponent((name || '').trim())}`
 }
 
 // Per-theme spec. Each theme is searched in its own (parallel) request so the

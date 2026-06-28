@@ -19,7 +19,7 @@ const emptyState = () => ({
   dessert: { items: null, loading: false, error: null },
 })
 
-function CafeCard({ cafe, rank, city }) {
+function CafeCard({ cafe, rank }) {
   const address = cleanAddress(cafe.address)
   return (
     <div className={styles.card}>
@@ -45,7 +45,7 @@ function CafeCard({ cafe, rank, city }) {
 
         <a
           className={styles.mapLink}
-          href={naverMapUrl(cafe.name, cafe.address, city)}
+          href={naverMapUrl(cafe.name)}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -175,7 +175,7 @@ export default function DessertView({ apiKey = '' }) {
             ) : (
               <div className={styles.list}>
                 {list.map((cafe, i) => (
-                  <CafeCard key={`${cafe.name}-${i}`} cafe={cafe} rank={i + 1} city={city} />
+                  <CafeCard key={`${cafe.name}-${i}`} cafe={cafe} rank={i + 1} />
                 ))}
               </div>
             )}
