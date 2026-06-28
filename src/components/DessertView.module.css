@@ -1,0 +1,278 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--bg);
+}
+
+/* ── Map ── */
+.mapWrap {
+  position: relative;
+  background: var(--surface-2);
+}
+
+.map {
+  display: block;
+  width: 100%;
+  height: 190px;
+  border: none;
+}
+
+.mapPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 190px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.cityBadge {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Theme toggle ── */
+.toggle {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.toggleBtn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 9px 6px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.toggleActive {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--text-primary);
+}
+
+.toggleLabel {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.toggleHint {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ── Body ── */
+.body {
+  flex: 1;
+  padding: 14px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Card ── */
+.card {
+  display: flex;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.rank {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cafeName {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.chip {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 3px 9px;
+  word-break: keep-all;
+}
+
+.reason {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  margin-top: 9px;
+  word-break: keep-all;
+}
+
+.review {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  font-style: italic;
+  word-break: keep-all;
+}
+
+.address {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  word-break: keep-all;
+}
+
+.mapLink {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-bottom: 1.5px solid var(--border-strong);
+  padding-bottom: 1px;
+}
+
+.mapLink:hover {
+  border-color: var(--accent);
+}
+
+/* ── States ── */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loadingText {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.loadingSub {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.error,
+.notice {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.retryBtn,
+.refreshBtn {
+  margin-top: 14px;
+  padding: 10px 20px;
+  border-radius: 99px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+
+.refreshBtn {
+  display: block;
+  margin: 16px auto 4px;
+}
+
+.retryBtn:hover,
+.refreshBtn:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.disclaimer {
+  margin-top: 16px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  text-align: center;
+  word-break: keep-all;
+  padding: 0 6px;
+}
