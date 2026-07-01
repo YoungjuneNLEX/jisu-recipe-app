@@ -171,6 +171,13 @@
   margin-bottom: 14px;
 }
 
+.subSectionLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 12px 0 6px;
+}
+
 .titleInput,
 .noteInput,
 .rowInput {

@@ -170,7 +170,10 @@ export default function RecipeDetail({ recipe, onClose, onDelete, onEdit, onTogg
             data-section="ingredients"
             ref={el => (sectionRefs.current.ingredients = el)}
           >
-            <h2 className={styles.sectionTitle}>🥕 재료</h2>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>🥕 재료</h2>
+              <button className={styles.sectionEditBtn} onClick={() => onEdit(recipe.id)}>✏️ 수정</button>
+            </div>
             {mainIngredients.length > 0 && (
               <div className={styles.ingredientGroup}>
                 <p className={styles.groupLabel}>주재료</p>

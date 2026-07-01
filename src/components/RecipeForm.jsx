@@ -83,6 +83,7 @@ export default function RecipeForm({
   const [ingredients, setIngredients] = useState(
     recipe?.ingredients?.length ? recipe.ingredients : ['']
   )
+  const [sauce, setSauce] = useState(recipe?.sauce?.length ? recipe.sauce : [])
   const [steps, setSteps] = useState(recipe?.steps?.length ? recipe.steps : [''])
   const [note, setNote] = useState(recipe?.note || '')
   const [mediaStatus, setMediaStatus] = useState('')
@@ -191,7 +192,7 @@ export default function RecipeForm({
       videoUrl: base.videoUrl || '',
       category,
       ingredients: cleanIngredients,
-      sauce: base.sauce || [],
+      sauce: sauce.map(s => s.trim()).filter(Boolean),
       steps: cleanSteps,
       note: note.trim(),
       tags,
@@ -350,7 +351,10 @@ export default function RecipeForm({
         {/* Ingredients */}
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>🥕 재료</h2>
+          <p className={styles.subSectionLabel}>주재료</p>
           <ListEditor items={ingredients} setItems={setIngredients} placeholder="재료" />
+          <p className={styles.subSectionLabel}>양념장</p>
+          <ListEditor items={sauce.length ? sauce : ['']} setItems={setSauce} placeholder="양념" />
         </section>
 
         {/* Steps */}
