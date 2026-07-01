@@ -198,7 +198,7 @@ export default function App() {
         <div className={styles.headerContent}>
           <div className={styles.logoArea}>
             <h1 className={styles.logo}>
-              <img className={styles.logoIcon} src="/icon.svg" alt="" aria-hidden="true" />
+              <img className={styles.logoIcon} src="/icon-192.png" alt="" aria-hidden="true" />
               레시피
             </h1>
             <p className={styles.subtitle}>

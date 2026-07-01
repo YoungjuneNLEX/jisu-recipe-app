@@ -1,4 +1,4 @@
-const CACHE = 'recipe-v5'
+const CACHE = 'recipe-v6'
 const PRECACHE = ['/', '/index.html']
 
 self.addEventListener('install', e => {
